@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "Minimalist Local-First Personal Productivity & Habit Operating System with Verified Focus & AI Analyst",
+  "type": "module",
   "main": "electron/main.js",
   "author": "Project Hellhound <project-hellhound-org>",
   "homepage": "https://github.com/project-hellhound-org/Habbit-Tracker",
@@ -64,13 +65,13 @@
     "@types/node": "^20.14.9",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^8.2.2",
-    "electron": "^31.1.0",
+    "electron": "^31.7.7",
     "electron-builder": "^24.13.3",
-    "typescript": "^5.2.2",
-    "vite": "^5.3.1",
-    "vitest": "^3.2.7",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.14",
+    "vitest": "^2.1.8",
     "wait-on": "^7.2.0"
   }
 }
