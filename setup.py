@@ -66,9 +66,9 @@ def main():
         print("    Windows: winget install OpenJS.NodeJS.LTS")
         sys.exit(1)
 
-    # 4. Install Node.js Dependencies
+    # 4. Install Node.js Dependencies (quiet clean output)
     print("\n[*] Installing Node.js & Electron dependencies via npm...")
-    if not run_cmd("npm install"):
+    if not run_cmd("npm install --no-fund --no-audit"):
         print("[!] Failed to install npm dependencies.")
         sys.exit(1)
 
