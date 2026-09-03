@@ -3,10 +3,11 @@ import { ActiveTab } from '../App';
 import {
   LayoutDashboard,
   CheckSquare,
-  Calendar,
+  CalendarDays,
   Clock,
   BookOpen,
   BarChart2,
+  Calendar,
   Sparkles,
   Settings
 } from 'lucide-react';
@@ -19,8 +20,9 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'habits', label: 'Habit Consistency', icon: Calendar },
+    { id: 'habits', label: 'Habit Consistency', icon: CalendarDays },
     { id: 'tasks', label: 'Tasks & Projects', icon: CheckSquare },
+    { id: 'calendar', label: 'Task Scheduling', icon: Calendar },
     { id: 'focus', label: 'Verified Focus', icon: Clock },
     { id: 'journal', label: 'Daily Review', icon: BookOpen },
     { id: 'analytics', label: 'Analytics', icon: BarChart2 },

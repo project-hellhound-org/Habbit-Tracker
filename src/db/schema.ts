@@ -63,10 +63,12 @@ export interface Task {
   priority: 'low' | 'medium' | 'high' | 'critical';
   dueDate?: string;
   dueTime?: string | null;
+  timeRange?: string;
   projectId?: string | null;
   goalId?: string | null;
   tags: string[];
   notes?: string;
+  estimatedMinutes?: number;
   trackedMinutes?: number;
   verifiedMinutes?: number;
   completedAt?: string | null;
@@ -207,6 +209,7 @@ export interface Tag {
 export interface AppSettings {
   id: string;
   userName: string;
+  appPassword?: string;
   theme: 'dark' | 'light' | 'system';
   accentColor: string;
   weekStartDay: number;
@@ -217,6 +220,10 @@ export interface AppSettings {
     goalWeight: number;
   };
   streakSkipRule: 'pause' | 'reset' | 'forgive' | 'break';
+  streakFreezeEarned: number;
+  streakFreezeActiveUntil?: string | null;
+  consecutiveDays100Pct: number;
+  lastLoginDate?: string;
   verificationSettings: {
     defaultIntervalMinutes: number;
     gracePeriodMinutes: number;
@@ -255,7 +262,7 @@ export interface AIMessage {
 
 export interface AISettings {
   id: string;
-  provider: 'builtin' | 'openai' | 'nvidia' | 'anthropic' | 'gemini' | 'custom';
+  provider: 'builtin' | 'ollama' | 'openai' | 'nvidia' | 'anthropic' | 'gemini' | 'custom';
   model: string;
   apiKey?: string;
   endpoint?: string;

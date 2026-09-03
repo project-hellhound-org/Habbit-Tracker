@@ -8,6 +8,7 @@ import { TasksView } from './views/TasksView';
 import { FocusView } from './views/FocusView';
 import { JournalView } from './views/JournalView';
 import { AnalyticsView } from './views/AnalyticsView';
+import { CalendarView } from './views/CalendarView';
 import { InsightsView } from './views/InsightsView';
 import { SettingsView } from './views/SettingsView';
 
@@ -18,6 +19,7 @@ export type ActiveTab =
   | 'focus'
   | 'journal'
   | 'analytics'
+  | 'calendar'
   | 'insights'
   | 'settings';
 
@@ -51,6 +53,7 @@ export const App: React.FC = () => {
           {activeTab === 'focus' && <FocusView />}
           {activeTab === 'journal' && <JournalView />}
           {activeTab === 'analytics' && <AnalyticsView />}
+          {activeTab === 'calendar' && <CalendarView />}
           {activeTab === 'insights' && <InsightsView />}
           {activeTab === 'settings' && <SettingsView />}
         </main>

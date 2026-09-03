@@ -4,9 +4,9 @@ import { getAIContext, generateBuiltinAnalyticalResponse } from '../engine/aiCon
 export const DEFAULT_AI_SETTINGS: AISettings = {
   id: 'default',
   provider: 'builtin',
-  model: 'gpt-4o-mini',
+  model: 'llama3.1',
   apiKey: '',
-  endpoint: '',
+  endpoint: 'http://localhost:11434/v1/chat/completions',
   temperature: 0.7,
   tone: 'analytical',
   behavioralFramework: 'Act as a precise, factual personal productivity copilot. Provide direct, evidence-based data interpretations.',
@@ -48,11 +48,32 @@ export async function testAIConnection(settings: AISettings): Promise<{ success:
     return { success: true, message: 'Built-in Offline Analytics Engine active and operating cleanly.' };
   }
 
-  if (!settings.apiKey && settings.provider !== 'custom') {
-    return { success: false, message: 'API Key is missing. Please enter your API key.' };
-  }
-
   try {
+    // OLLAMA LOCAL BASE PROVIDER
+    if (settings.provider === 'ollama') {
+      const endpoint = settings.endpoint || 'http://localhost:11434/v1/chat/completions';
+      const model = settings.model || 'llama3.1';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'Ping' }],
+          max_tokens: 10,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return { success: false, message: `Ollama Error (${response.status}): ${errorText.slice(0, 120)}. Ensure 'ollama serve' is running.` };
+      }
+      return { success: true, message: `Ollama Local Base Verified (${model})!` };
+    }
+
+    if (!settings.apiKey && settings.provider !== 'custom') {
+      return { success: false, message: 'API Key is missing. Please enter your API key.' };
+    }
+
     if (settings.provider === 'nvidia') {
       const endpoint = settings.endpoint || 'https://integrate.api.nvidia.com/v1/chat/completions';
       const model = settings.model || 'meta/llama-3.1-70b-instruct';
@@ -156,7 +177,7 @@ export async function queryAIAssistant(
   const settings = await getAISettings();
   const contextData = await getAIContext(userQuery, settings.privacy, entityContext);
 
-  if (settings.provider === 'builtin' || !settings.apiKey) {
+  if (settings.provider === 'builtin' || (!settings.apiKey && settings.provider !== 'ollama' && settings.provider !== 'custom')) {
     const res = await generateBuiltinAnalyticalResponse(userQuery, contextData, settings.tone, settings.behavioralFramework);
     if (onStreamChunk) {
       onStreamChunk(res.text);
@@ -187,6 +208,41 @@ CRITICAL RULES:
   `.trim();
 
   try {
+    // 1. OLLAMA LOCAL BASE AI PROVIDER
+    if (settings.provider === 'ollama') {
+      const endpoint = settings.endpoint || 'http://localhost:11434/v1/chat/completions';
+      const model = settings.model || 'llama3.1';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal,
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userQuery },
+          ],
+          temperature: settings.temperature || 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Ollama Local API Error (${response.status}): ${errText.slice(0, 150)}. Ensure 'ollama serve' is running.`);
+      }
+
+      const data = await response.json();
+      const responseText = data.choices?.[0]?.message?.content || 'No response generated from Ollama model.';
+      if (onStreamChunk) onStreamChunk(responseText);
+
+      return {
+        text: responseText,
+        metricsUsed: contextData.metricsUsed,
+        suggestedPrompts: ['Analyze Today', 'Review My Habits', 'Explain Focus Efficiency'],
+      };
+    }
+
+    // 2. NVIDIA NIM PROVIDER
     if (settings.provider === 'nvidia') {
       const endpoint = settings.endpoint || 'https://integrate.api.nvidia.com/v1/chat/completions';
       const model = settings.model || 'meta/llama-3.1-70b-instruct';
@@ -225,6 +281,7 @@ CRITICAL RULES:
       };
     }
 
+    // 3. ANTHROPIC CLAUDE PROVIDER
     if (settings.provider === 'anthropic') {
       const endpoint = settings.endpoint || 'https://api.anthropic.com/v1/messages';
       const response = await fetch(endpoint, {
@@ -259,6 +316,7 @@ CRITICAL RULES:
       };
     }
 
+    // 4. GOOGLE GEMINI PROVIDER
     if (settings.provider === 'gemini') {
       const model = settings.model || 'gemini-1.5-flash';
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.apiKey}`;
@@ -292,6 +350,7 @@ CRITICAL RULES:
       };
     }
 
+    // 5. OPENAI & CUSTOM PROVIDERS
     const endpoint = settings.endpoint || 'https://api.openai.com/v1/chat/completions';
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -331,7 +390,7 @@ CRITICAL RULES:
     }
 
     return {
-      text: `> [!WARNING]\n> **AI Provider Connection Error**: ${err.message}\n>\n> Please verify your API Key and Model Name in [Settings & AI Configuration].`,
+      text: `> [!WARNING]\n> **AI Provider Connection Error**: ${err.message}\n>\n> Please verify your configuration in [Settings & AI Personalization].`,
       suggestedPrompts: ['Analyze Today', 'Review My Habits', 'Explain Focus Efficiency'],
       metricsUsed: contextData.metricsUsed,
     };

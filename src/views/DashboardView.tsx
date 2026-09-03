@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/schema';
 import { ActiveTab } from '../App';
-import { Calendar, CheckSquare, Clock, Sparkles, ArrowRight, Activity } from 'lucide-react';
+import { AddHabitModal } from '../components/AddHabitModal';
+import { AddTaskModal } from '../components/AddTaskModal';
+import { Calendar, CheckSquare, Clock, Sparkles, Plus, ArrowRight, Activity } from 'lucide-react';
 
 interface DashboardViewProps {
   setActiveTab: (tab: ActiveTab) => void;
@@ -12,6 +14,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab }) =>
   const habits = useLiveQuery(() => db.habits.where('archived').equals(0).toArray()) || [];
   const tasks = useLiveQuery(() => db.tasks.toArray()) || [];
   const focusSessions = useLiveQuery(() => db.focusSessions.where('status').equals('completed').toArray()) || [];
+
+  const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
 
   const completedTasks = tasks.filter((t) => t.status === 'completed').length;
   const overdueTasks = tasks.filter((t) => t.dueDate && t.dueDate < new Date().toISOString().split('T')[0] && t.status !== 'completed').length;
@@ -24,9 +29,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab }) =>
           <h2>Precision Workspace Dashboard</h2>
           <p className="subtitle">High-density summary of your daily habits, task workloads, and verified focus time.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setActiveTab('insights')}>
-          <Sparkles size={14} /> Ask AI Analyst
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-secondary" onClick={() => setIsAddHabitModalOpen(true)}>
+            <Plus size={14} /> Add Habit
+          </button>
+          <button className="btn btn-secondary" onClick={() => setIsAddTaskModalOpen(true)}>
+            <Plus size={14} /> Add Task
+          </button>
+          <button className="btn btn-primary" onClick={() => setActiveTab('insights')}>
+            <Sparkles size={14} /> Ask AI Analyst
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
@@ -73,12 +86,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab }) =>
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3>Active Habits</h3>
-            <button className="btn btn-secondary btn-xs" onClick={() => setActiveTab('habits')}>
-              Manage Habits <ArrowRight size={12} />
+            <button className="btn btn-secondary btn-xs" onClick={() => setIsAddHabitModalOpen(true)}>
+              <Plus size={12} /> Add Habit
             </button>
           </div>
           {habits.length === 0 ? (
-            <p className="subtitle">No active habits recorded. Click Manage Habits to create your first habit.</p>
+            <p className="subtitle">No active habits recorded. Click Add Habit to open dedicated panel.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {habits.slice(0, 5).map((h) => (
@@ -94,12 +107,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab }) =>
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3>Critical Tasks</h3>
-            <button className="btn btn-secondary btn-xs" onClick={() => setActiveTab('tasks')}>
-              Manage Tasks <ArrowRight size={12} />
+            <button className="btn btn-secondary btn-xs" onClick={() => setIsAddTaskModalOpen(true)}>
+              <Plus size={12} /> Add Task
             </button>
           </div>
           {tasks.length === 0 ? (
-            <p className="subtitle">No pending tasks recorded. Click Manage Tasks to add work items.</p>
+            <p className="subtitle">No pending tasks recorded. Click Add Task to open dedicated panel.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {tasks.slice(0, 5).map((t) => (
@@ -112,6 +125,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab }) =>
           )}
         </div>
       </div>
+
+      {/* Dedicated Modals */}
+      <AddHabitModal isOpen={isAddHabitModalOpen} onClose={() => setIsAddHabitModalOpen(false)} />
+      <AddTaskModal isOpen={isAddTaskModalOpen} onClose={() => setIsAddTaskModalOpen(false)} />
     </div>
   );
 };
