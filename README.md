@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-000000?style=for-the-badge&logo=electron&logoColor=white" alt="Platforms" />
   <img src="https://img.shields.io/badge/Storage-Local--First%20IndexedDB-000000?style=for-the-badge&logo=sqlite&logoColor=white" alt="Local First" />
-  <img src="https://img.shields.io/badge/AI-NVIDIA%20NIM%20%7C%20OpenAI%20%7C%20Claude%20%7C%20Offline-000000?style=for-the-badge&logo=nvidia&logoColor=white" alt="AI Providers" />
+  <img src="https://img.shields.io/badge/AI-Ollama%20%7C%20NVIDIA%20NIM%20%7C%20OpenAI%20%7C%20Claude%20%7C%20Offline-000000?style=for-the-badge&logo=ollama&logoColor=white" alt="AI Providers" />
 </p>
 
 ---
@@ -28,28 +28,38 @@ Every surface follows a **Minimal Ink & Monochromatic Precision** visual languag
 
 ### 1. 📊 Habit Consistency Engine
 - Track daily, weekly, or custom scheduled habits with target values and metrics.
+- Dedicated Modal Creation Dialogs (**Add Habit Modal** with category, time of day, difficulty, and start/end dates).
 - 30-day streak heatmaps, completion consistency percentages, and best-performing day metrics.
 - Flexible streak skip rules (*Pause*, *Reset*, *Forgive*, *Break*).
 
-### 2. 🎯 Tasks, Workload & Strategic Goals
+### 2. 🎯 Tasks, Workload & Interactive Scheduling Calendar
 - Workload management supporting backlog, todo, in-progress, and critical priority items.
-- Project alignment with target deadline tracking.
+- Dedicated Modal Task Dialogs (**Add Task Modal** with priority, due date, due time, estimated minutes, and tags).
+- **Interactive Task Scheduling Calendar**: Month & week grid highlighting task deadlines, scheduled habits, and historical date inspection.
 
 ### 3. ⏱️ Verified Focus Engine (Anti-Gaming Protection)
 - Multi-mode focus timers (**Guided Verification Mode**, **Continuous Mode**, **Goal-Based Focus**).
 - Anti-gaming verification checkpoints: periodic verification prompts separate verified deep work from idle time.
 - Interruption logging and session efficiency analytics.
 
-### 4. 🧠 Context-Aware AI Analyst & Personalization System
-- Productivity copilot analyzing habit consistency, task backlogs, focus efficiency, and daily journal reviews.
-- **Provider Support**: 100% Offline Built-in Analytical Engine, **NVIDIA NIM** (Llama 3.1 & Mixtral), OpenAI (GPT-4o), Anthropic Claude 3.5, and Google Gemini.
-- **Behavioral Framework Personalization**: Customize AI response tones (*Analytical*, *Motivational*, *Strict Audit*, *Executive Summary*, *Guided Mentor*) and system directives.
+### 4. 📈 Rich Visual Analytics & SVG Charts
+- Multi-line 30-day trend graphs tracking habit completion % and verified focus curves.
+- Task priority distribution donut/pie charts.
+- 7-day focus minutes breakdown bar charts.
+
+### 5. 🔥 Dynamic Flame Streak & Streak Freeze Shield
+- **Top-Corner Dynamic Flame Indicator**: Red glow (100% completion), Orange (50%), Yellow (25%), White/Dim (10%), with ticking & burst animation on login if 0% progress.
+- **Streak Freeze Shield**: Earn 1 Streak Freeze after 5 consecutive days of 100% activity. Protects your streak for 24 hours if a day is missed, featuring an animated melting ice sequence.
+
+### 6. 🧠 Context-Aware AI Analyst & Master Password Security
+- Integrates **Ollama Local Base AI** (`http://localhost:11434`), **NVIDIA NIM**, OpenAI (GPT-4o), Anthropic Claude 3.5, Google Gemini, and 100% Offline Engine.
+- **Master App Password**: Password-protected **Clear Entire Database** and JSON data backup extraction in Settings.
 
 ---
 
 ## 💻 Installation & Setup Guide
 
-Habit OS can be installed either as a **Direct Standalone App** or via **CLI Clone-Repo Build & Setup**.
+Habit OS can be installed either as a **Direct Standalone Desktop App** or via **Automated Python CLI Setup**.
 
 ---
 
@@ -68,46 +78,44 @@ Run Habit OS directly as a standalone desktop application with a GUI icon:
 
 ### Method 2: Command-Line CLI Setup & Build (Cross-Platform)
 
-Follow these steps to set up the development environment, clone the repository, and perform the initial build from source.
+Follow these steps to set up the development environment, clone the repository, and perform the initial build.
 
-#### Prerequisites
+#### 1️⃣ Environment Prerequisites & System Dependencies
 
-Ensure **Node.js** (v18.0.0 or higher) and **Git** are installed on your environment.
-
----
-
-#### 1️⃣ Environment Setup & Dependencies
-
-##### 🪟 Windows (PowerShell / Command Prompt)
-```powershell
-# Verify Node.js and Git installation
-node -v
-npm -v
-git --version
-
-# If Node.js is missing, install via winget:
-winget install OpenJS.NodeJS.LTS
-```
+Ensure **Python** (3.8+), **Node.js** (v18+ LTS), and **Git** are installed.
 
 ##### 🐧 Linux (Ubuntu / Debian / Kali / Arch)
 ```bash
 # Ubuntu / Debian / Kali
 sudo apt update
-sudo apt install -y nodejs npm git build-essential
+sudo apt install -y python3 python3-pip python3-venv nodejs npm git build-essential
 
 # Arch Linux
-sudo pacman -S nodejs npm git base-devel
+sudo pacman -S python python-pip nodejs npm git base-devel
+```
+
+##### 🪟 Windows (PowerShell / Command Prompt)
+```powershell
+# Verify Python, Node.js, and Git installation
+python --version
+node -v
+npm -v
+git --version
+
+# If Node.js or Python are missing:
+winget install Python.Python.3.11
+winget install OpenJS.NodeJS.LTS
 ```
 
 ##### 🍎 macOS (Terminal)
 ```bash
 # Install via Homebrew
-brew install node git
+brew install python node git
 ```
 
 ---
 
-#### 2️⃣ Clone Repository & Install Dependencies
+#### 2️⃣ Clone Repository & Automated Setup
 
 Open your terminal or command line prompt and execute:
 
@@ -118,9 +126,21 @@ git clone https://github.com/project-hellhound-org/Habbit-Tracker.git
 # Navigate into project directory
 cd Habbit-Tracker
 
-# Install Node.js & Electron dependencies
+# Option A: Automated One-Line Setup (Recommended - Auto-bootstraps Pip & Ollama)
+python3 setup.py
+
+# Option B: Manual Pip & NPM Installation
+python3 -m pip install -r requirements.txt
 npm install
 ```
+
+> [!TIP]
+> **Troubleshooting Pip in Virtual Environments**:
+> If running `pip install -r requirements.txt` returns `ModuleNotFoundError: No module named 'pip'`, invoke pip via Python module flag:
+> ```bash
+> python3 -m pip install -r requirements.txt
+> ```
+> Or run `python3 setup.py`, which automatically repairs and bootstraps pip using `ensurepip`.
 
 ---
 
@@ -141,10 +161,8 @@ npm run electron:dev
 
 ##### 📦 Build Standalone Executables (Cross-Platform)
 ```bash
-# 1. Compile TypeScript & Vite web bundle
+# Compile TypeScript & package cross-platform desktop executables
 npm run build
-
-# 2. Package cross-platform desktop executables
 npm run electron:build
 ```
 
@@ -160,6 +178,7 @@ The output executables and installers will be generated inside the `dist_electro
 - **GUI Framework**: Electron (Desktop Runtime) & React 18
 - **Build System**: Vite & TypeScript
 - **State & Storage**: Dexie.js (IndexedDB local-first database)
+- **Local AI Engine**: Ollama (`http://localhost:11434`) & Cloud LLMs
 - **Styling**: Modern Vanilla CSS Design Tokens (Monochromatic High-Contrast Palette)
 - **Icons**: Lucide React
 - **Date Math**: date-fns
@@ -170,7 +189,7 @@ The output executables and installers will be generated inside the `dist_electro
 
 - **Zero Mandatory Cloud Dependencies**: Your database lives exclusively inside your local device storage.
 - **Granular AI Privacy Controls**: Control exactly which metrics (Habits, Tasks, Focus, Journal) are shared with AI providers.
-- **Masked Credentials**: API keys are masked and securely stored locally.
+- **Master Password Security**: Database wipes and exports require master password authorization.
 
 ---
 
