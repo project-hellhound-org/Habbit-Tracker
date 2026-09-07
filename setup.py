@@ -97,8 +97,24 @@ def main():
     print("\n[*] Running Environment Validation Check...")
     run_cmd(f'"{sys.executable}" validate_env.py')
 
+    # 9. Register Terminal Executable 'Habit'
+    print("\n[*] Registering terminal launcher command 'Habit'...")
+    try:
+        user_bin = os.path.expanduser("~/.local/bin")
+        os.makedirs(user_bin, exist_ok=True)
+        habit_bin = os.path.join(user_bin, "Habit")
+        script_bin = os.path.abspath("bin/Habit")
+        if os.path.exists(script_bin):
+            if os.path.lexists(habit_bin):
+                os.remove(habit_bin)
+            os.symlink(script_bin, habit_bin)
+            print(f"[✓] 'Habit' command symlinked to {habit_bin}")
+    except Exception as e:
+        print(f"[!] Warning registering Habit command: {e}")
+
     print("\n" + "=" * 68)
     print("  ✓ HABIT OS SETUP & REMEDIATION COMPLETED SUCCESSFULLY!")
+    print("  - Launch via Terminal:  Habit")
     print("  - Launch Web View:      npm run dev")
     print("  - Launch Desktop App:  npm run electron:dev")
     print("  - Package Executables:  npm run electron:build")

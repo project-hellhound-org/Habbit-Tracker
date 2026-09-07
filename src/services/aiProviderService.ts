@@ -28,6 +28,32 @@ export function maskApiKey(key?: string): string {
   return `${prefix}••••••••${suffix}`;
 }
 
+/**
+ * Auto-detects AI Model Provider based on API key structure (Bounty Hunter pattern)
+ */
+export function detectAIProviderFromKey(apiKey: string): { provider: string; suggestedModel: string } {
+  if (!apiKey || apiKey.trim() === '' || apiKey === 'ollama') {
+    return { provider: 'ollama', suggestedModel: 'llama3.1' };
+  }
+  const key = apiKey.trim();
+  if (key.startsWith('AIza')) {
+    return { provider: 'gemini', suggestedModel: 'gemini-1.5-flash' };
+  }
+  if (key.startsWith('sk-ant-')) {
+    return { provider: 'anthropic', suggestedModel: 'claude-3-5-sonnet-20241022' };
+  }
+  if (key.startsWith('nvapi-')) {
+    return { provider: 'nvidia', suggestedModel: 'meta/llama-3.1-70b-instruct' };
+  }
+  if (key.startsWith('sk-or-')) {
+    return { provider: 'openrouter', suggestedModel: 'meta-llama/llama-3.1-70b-instruct' };
+  }
+  if (key.startsWith('sk-')) {
+    return { provider: 'openai', suggestedModel: 'gpt-4o-mini' };
+  }
+  return { provider: 'custom', suggestedModel: 'custom-model' };
+}
+
 export async function getAISettings(): Promise<AISettings> {
   const settings = await db.aiSettings.get('default');
   if (!settings) {

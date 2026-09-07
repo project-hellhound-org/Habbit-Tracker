@@ -1,5 +1,9 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron');
-const path = require('path');
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow;
 
@@ -21,17 +25,15 @@ function createWindow() {
     },
   });
 
-  // Load dev server URL or production static files
-  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-  if (isDev) {
-    const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:3000';
+  // Load dev server URL if explicitly set or development, otherwise load compiled static files directly
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devServerUrl) {
     mainWindow.loadURL(devServerUrl);
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  // Handle external link clicks securely in user's default browser
+  // Security: Handle external link clicks securely in user's default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http:') || url.startsWith('https:')) {
       shell.openExternal(url);
@@ -45,7 +47,7 @@ function createWindow() {
   });
 }
 
-// Ensure single-instance application locking
+// Single-instance application locking for security & consistency
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();

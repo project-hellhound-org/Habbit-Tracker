@@ -55,8 +55,8 @@ export const TasksView: React.FC = () => {
                   <div className="subtitle" style={{ fontSize: '0.7rem', marginTop: '0.15rem' }}>
                     Schedule: {t.startDate} {t.startTime || ''} → {t.endDate || t.dueDate} {t.endTime || ''}
                     {t.dailyTimeLimitMinutes && <span> | Daily Limit: {t.dailyTimeLimitMinutes / 60}h</span>}
-                    {(t.estimatedDays || t.estimatedHours || t.estimatedMinutes) && (
-                      <span> | Est: {t.estimatedDays || 0}d {t.estimatedHours || 0}h {t.estimatedMinutes || 0}m</span>
+                    {t.completionTimeMinutes && (
+                      <span> | Duration: {Math.floor(t.completionTimeMinutes / 60)}h {t.completionTimeMinutes % 60}m</span>
                     )}
                   </div>
                 </div>

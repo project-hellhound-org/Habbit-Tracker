@@ -50,9 +50,7 @@ export interface Task {
   dueDate?: string;
   dueTime?: string | null;
   dailyTimeLimitMinutes?: number; // Daily time allocation limit
-  estimatedDays?: number;
-  estimatedHours?: number;
-  estimatedMinutes?: number;
+  completionTimeMinutes?: number; // Completion Time (Duration in minutes)
   projectId?: string | null;
   goalId?: string | null;
   tags?: string[];

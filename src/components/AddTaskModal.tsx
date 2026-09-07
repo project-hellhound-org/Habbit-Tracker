@@ -24,16 +24,17 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
   // Daily Time Allocation Limit Field
   const [dailyTimeLimitHours, setDailyTimeLimitHours] = useState<number>(2);
 
-  // Dedicated Estimated Duration Segmented by Days, Hours, Minutes
-  const [estDays, setEstDays] = useState<number>(0);
-  const [estHours, setEstHours] = useState<number>(4);
-  const [estMins, setEstMins] = useState<number>(30);
+  // Dedicated Completion Time (Duration) Field
+  const [completionHours, setCompletionHours] = useState<number>(2);
+  const [completionMinutes, setCompletionMinutes] = useState<number>(30);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    const totalDurationMinutes = (Number(completionHours) || 0) * 60 + (Number(completionMinutes) || 0);
 
     await db.tasks.add({
       id: `task-${Date.now()}`,
@@ -48,9 +49,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
       dueDate: endDate,
       dueTime: endTime,
       dailyTimeLimitMinutes: Number(dailyTimeLimitHours) * 60,
-      estimatedDays: Number(estDays) || 0,
-      estimatedHours: Number(estHours) || 0,
-      estimatedMinutes: Number(estMins) || 0,
+      completionTimeMinutes: totalDurationMinutes,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -172,42 +171,31 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
             />
           </div>
 
-          {/* Dedicated Estimated Duration Segmented by Days, Hours, and Minutes */}
+          {/* Dedicated Completion Time (Duration) */}
           <div className="form-group">
-            <label className="form-label">Estimated Task Duration Segmented</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+            <label className="form-label">Completion Time (Duration)</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
-                <span className="subtitle" style={{ fontSize: '0.7rem' }}>Days</span>
+                <span className="subtitle" style={{ fontSize: '0.75rem' }}>Hours</span>
                 <input
                   type="number"
                   min={0}
+                  max={24}
                   className="form-input"
-                  value={estDays}
-                  onChange={(e) => setEstDays(Number(e.target.value))}
+                  value={completionHours}
+                  onChange={(e) => setCompletionHours(Number(e.target.value))}
                 />
               </div>
 
               <div>
-                <span className="subtitle" style={{ fontSize: '0.7rem' }}>Hours</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={23}
-                  className="form-input"
-                  value={estHours}
-                  onChange={(e) => setEstHours(Number(e.target.value))}
-                />
-              </div>
-
-              <div>
-                <span className="subtitle" style={{ fontSize: '0.7rem' }}>Minutes</span>
+                <span className="subtitle" style={{ fontSize: '0.75rem' }}>Minutes</span>
                 <input
                   type="number"
                   min={0}
                   max={59}
                   className="form-input"
-                  value={estMins}
-                  onChange={(e) => setEstMins(Number(e.target.value))}
+                  value={completionMinutes}
+                  onChange={(e) => setCompletionMinutes(Number(e.target.value))}
                 />
               </div>
             </div>

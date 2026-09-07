@@ -4,6 +4,7 @@ import { db } from '../db/schema';
 import { ActiveTab } from '../App';
 import { StreakFlameIndicator } from './StreakFlameIndicator';
 import { StreakFreezeModal } from './StreakFreezeModal';
+import { calculateCurrentStreak } from '../engine/streakEngine';
 import { Sparkles, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -17,14 +18,16 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   const todayIso = format(new Date(), 'yyyy-MM-dd');
 
   const habits = useLiveQuery(() => db.habits.where('archived').equals(0).toArray()) || [];
-  const habitLogs = useLiveQuery(() => db.habitLogs.where('date').equals(todayIso).toArray()) || [];
+  const allHabitLogs = useLiveQuery(() => db.habitLogs.toArray()) || [];
+  const allTasks = useLiveQuery(() => db.tasks.toArray()) || [];
+  const todayHabitLogs = allHabitLogs.filter((l) => l.date === todayIso);
   const settings = useLiveQuery(() => db.settings.get('default'));
 
-  const completedTodayCount = habitLogs.filter((l) => l.status === 'completed').length;
+  const completedTodayCount = todayHabitLogs.filter((l) => l.status === 'completed').length;
   const totalHabitCount = habits.length || 1;
   const completionPct = habits.length > 0 ? Math.round((completedTodayCount / totalHabitCount) * 100) : 100;
 
-  const currentStreak = completedTodayCount > 0 ? 14 : 0;
+  const currentStreak = calculateCurrentStreak(allHabitLogs, allTasks);
   const hasFreeze = (settings?.streakFreezeEarned || 0) > 0;
 
   const [isFreezeModalOpen, setIsFreezeModalOpen] = useState(false);

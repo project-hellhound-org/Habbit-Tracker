@@ -4,192 +4,132 @@
 
 <p align="center">
   <img src="public/icon.png" width="96" alt="Habit OS Logo" /><br>
-  <b>A Minimalist, Local-First, High-Precision Productivity & Habit Operating System</b><br>
-  Built with React, Vite, TypeScript, Dexie IndexedDB, and Electron for Standalone Desktop GUI Applications.
+  <b>A Minimal Ink, Local-First, High-Precision Productivity Workstation & Habit Operating System</b><br>
+  Built with React, Vite, TypeScript, Dexie IndexedDB, and Electron Desktop Runtime.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-000000?style=for-the-badge&logo=electron&logoColor=white" alt="Platforms" />
+  <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Windows%20%7C%20macOS-000000?style=for-the-badge&logo=electron&logoColor=white" alt="Platforms" />
+  <img src="https://img.shields.io/badge/Execution-Terminal%20Direct%20Launcher-000000?style=for-the-badge&logo=gnu-bash&logoColor=white" alt="Terminal Launcher" />
   <img src="https://img.shields.io/badge/Storage-Local--First%20IndexedDB-000000?style=for-the-badge&logo=sqlite&logoColor=white" alt="Local First" />
-  <img src="https://img.shields.io/badge/AI-Ollama%20%7C%20NVIDIA%20NIM%20%7C%20OpenAI%20%7C%20Claude%20%7C%20Offline-000000?style=for-the-badge&logo=ollama&logoColor=white" alt="AI Providers" />
+  <img src="https://img.shields.io/badge/AI-Ollama%20%7C%20NVIDIA%20%7C%20OpenAI%20%7C%20Claude%20%7C%20Gemini%20%7C%20OpenRouter-000000?style=for-the-badge&logo=ollama&logoColor=white" alt="AI Model Integration" />
 </p>
 
 ---
 
 ## 🌟 Overview
 
-**Habit OS** is an advanced, privacy-focused productivity workstation designed for professionals, engineers, and power users who demand high-density workflow management without slow cloud bloat or visual distraction.
+**Habit OS** is an advanced, privacy-conscious productivity workstation engineered for professionals, software developers, and research technicians who require high-density habit tracking, task scheduling, daily reviews, and AI analytical copiloting without cloud vendor lock-in or visual distraction.
 
-Every surface follows a **Minimal Ink & Monochromatic Precision** visual language, storing 100% of user data locally inside your device using Dexie IndexedDB.
+Designed around the **Minimal Ink** philosophy, every component uses monochromatic high-contrast visual tokens (`#F7F7F5` light mode / `#0A0A0A` dark mode), 1px structural borders, centralized motion tokens, and GPU-friendly smooth micro-interactions.
 
 ---
 
-## 🚀 Key Capabilities & Modules
+## 🚀 Key Features & Architectural Enhancements
 
-### 1. 📊 Habit Consistency Engine
-- Track daily, weekly, or custom scheduled habits with target values and metrics.
-- Dedicated Modal Creation Dialogs (**Add Habit Modal** with category, time of day, difficulty, and start/end dates).
-- 30-day streak heatmaps, completion consistency percentages, and best-performing day metrics.
-- Flexible streak skip rules (*Pause*, *Reset*, *Forgive*, *Break*).
+### 1. 📊 Habit Creation & Scheduling Engine
+- **End Date Support**: Define timeline boundaries and completion targets.
+- **Flexible Scheduling**: Set custom start and end time windows (`09:00` → `17:00`).
+- **Post-Creation Habit Editing**: Edit habit parameters, schedules, and categories at any time.
+- **Restricted Categories**: *Fitness & Health*, *Learning & Growth*, *Work & Projects*.
+- **Mini Scheduling Calendar**: Integrated timeline view inside habit creation & editing modals.
 
-### 2. 🎯 Tasks, Workload & Interactive Scheduling Calendar
-- Workload management supporting backlog, todo, in-progress, and critical priority items.
-- Dedicated Modal Task Dialogs (**Add Task Modal** with priority, due date, due time, estimated minutes, and tags).
-- **Interactive Task Scheduling Calendar**: Month & week grid highlighting task deadlines, scheduled habits, and historical date inspection.
+### 2. 🎯 Task Specification & Scheduling Column
+- **Schedule Window Column**: Dedicated Start Date/Time and End Date/Time selection column.
+- **Daily Time Allocation Limits**: Cap daily task execution hours per day.
+- **Completion Time (Duration)**: Specify task duration in hours and minutes for real-time workload estimation.
 
-### 3. ⏱️ Verified Focus Engine (Anti-Gaming Protection)
-- Multi-mode focus timers (**Guided Verification Mode**, **Continuous Mode**, **Goal-Based Focus**).
-- Anti-gaming verification checkpoints: periodic verification prompts separate verified deep work from idle time.
-- Interruption logging and session efficiency analytics.
+### 3. 📅 Dynamic Task Scheduling Calendar
+- Replaced static calendar grid with a real-time dynamic date selector.
+- Click any date to instantly open a comprehensive daily dashboard summarizing tasks, scheduled habits, reviews, and analytics for that specific day.
 
-### 4. 📈 Rich Visual Analytics & SVG Charts
-- Multi-line 30-day trend graphs tracking habit completion % and verified focus curves.
-- Task priority distribution donut/pie charts.
-- 7-day focus minutes breakdown bar charts.
+### 4. 🔥 Dynamic 0–100% Streak Flame Engine & Fix
+- **Accurate Consecutive Streak Calculation**: Computes real-time consecutive historical calendar days with completed habits/tasks (e.g., logging 5 days = 5-day streak).
+- **Interpolated Flame System**: 
+  - `0–25%`: Cool Gray Ember
+  - `50%`: Active Yellow Ember
+  - `75%`: Active Orange Flame
+  - `100%`: Deep-Red High-Fidelity Sustained Flame with layered bloom and micro-particles.
 
-### 5. 🔥 Dynamic Flame Streak & Streak Freeze Shield
-- **Top-Corner Dynamic Flame Indicator**: Red glow (100% completion), Orange (50%), Yellow (25%), White/Dim (10%), with ticking & burst animation on login if 0% progress.
-- **Streak Freeze Shield**: Earn 1 Streak Freeze after 5 consecutive days of 100% activity. Protects your streak for 24 hours if a day is missed, featuring an animated melting ice sequence.
+### 5. 📷 Real-Time Analytical Daily Review Snapshots
+- Replaced hard-coded review data with **real-time dynamic database calculations**:
+  - **Productivity Score**: Computed score (e.g., `82/100`).
+  - **Habit Completion**: Real-time ratio (e.g., `8/10`).
+  - **Task Completion**: Real-time ratio (e.g., `7/9`).
+  - **Time Logged**: Total task execution time (e.g., `5h 24m`).
+  - **Focus Efficiency**: Real-time performance ratio (e.g., `87%`).
+  - **Goals Progress**: Real-time active goal progress (e.g., `3/4`).
+  - **Overdue Tasks**: Count of uncompleted tasks past schedule end date.
+- **Task & Work Review Statistics Audit**: Real-time audit table tracking items by *Planned*, *Completed*, *Remaining*, *Overdue*, *Cancelled*, and *Deferred*.
 
-### 6. 🧠 Context-Aware AI Analyst & Master Password Security
-- Integrates **Ollama Local Base AI** (`http://localhost:11434`), **NVIDIA NIM**, OpenAI (GPT-4o), Anthropic Claude 3.5, Google Gemini, and 100% Offline Engine.
-- **Master App Password**: Password-protected **Clear Entire Database** and JSON data backup extraction in Settings.
+### 6. 🤖 Multi-Provider AI Integration (Bounty Hunter Key Logic)
+- **Automatic Provider Detection**: Automatically detects AI providers based on API key structure (Bounty Hunter pattern):
+  - `sk-ant-` → Anthropic Claude
+  - `nvapi-` → NVIDIA NIM (Llama 3.1 70B)
+  - `AIza` → Google Gemini
+  - `sk-or-` → OpenRouter (Cloud Open-Source Models)
+  - `sk-` → OpenAI (GPT-4o)
+  - `ollama` / Empty → Ollama Local Base Server (`http://localhost:11434`)
+- **Seamless Local & Cloud Models**: Switch between local offline Ollama models and open-source cloud models via API key configuration.
+
+---
+
+## ⚡ Direct Terminal Execution (`Habit`)
+
+You can launch Habit OS directly from your command-line interface without using a web browser or localhost URLs:
+
+```bash
+# Type Habit anywhere in your terminal to launch the program directly
+Habit
+```
+
+The installer registers `Habit` inside your system executable path (`~/.local/bin/Habit`).
 
 ---
 
 ## 💻 Installation & Setup Guide
 
-Habit OS can be installed either as a **Direct Standalone Desktop App** or via **Automated Python CLI Setup**.
-
----
-
-### Method 1: Direct Desktop App Installation (Recommended)
-
-Run Habit OS directly as a standalone desktop application with a GUI icon:
-
-1. Navigate to the latest **Releases** section on GitHub.
-2. Download the pre-packaged executable for your operating system:
-   - **Windows**: `Habit.OS.Setup.1.0.0.exe` (Installer) or `Habit.OS.1.0.0.Portable.exe` (Standalone)
-   - **Linux**: `Habit_OS-1.0.0.AppImage` (Executable) or `habit-os_1.0.0_amd64.deb` (Debian Package)
-   - **macOS**: `Habit_OS-1.0.0.dmg` (Disk Image Installer)
-3. Launch the application directly via your desktop icon or start menu shortcut.
-
----
-
-### Method 2: Command-Line CLI Setup & Build (Cross-Platform)
-
-Follow these steps to set up the development environment, clone the repository, and perform the initial build.
-
-#### 1️⃣ Environment Prerequisites & System Dependencies
-
-Ensure **Python** (3.8+), **Node.js** (v18+ LTS), and **Git** are installed.
-
-##### 🐧 Linux (Ubuntu / Debian / Kali / Arch)
-```bash
-# Ubuntu / Debian / Kali
-sudo apt update
-sudo apt install -y python3 python3-pip python3-venv nodejs npm git build-essential
-
-# Arch Linux
-sudo pacman -S python python-pip nodejs npm git base-devel
-```
-
-##### 🪟 Windows (PowerShell / Command Prompt)
-```powershell
-# Verify Python, Node.js, and Git installation
-python --version
-node -v
-npm -v
-git --version
-
-# If Node.js or Python are missing:
-winget install Python.Python.3.11
-winget install OpenJS.NodeJS.LTS
-```
-
-##### 🍎 macOS (Terminal)
-```bash
-# Install via Homebrew
-brew install python node git
-```
-
----
-
-#### 2️⃣ Clone Repository & Automated Setup
-
-Open your terminal or command line prompt and execute:
+### Method 1: Single Command Automated Setup (Recommended)
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/project-hellhound-org/Habbit-Tracker.git
-
-# Navigate into project directory
 cd Habbit-Tracker
 
-# Option A: Automated One-Line Setup (Recommended - Auto-bootstraps Pip & Ollama)
+# 2. Run automated initialization (installs Python & Node.js dependencies, registers Habit CLI, pulls Ollama llama3.1, builds bundle)
 python3 setup.py
+```
 
-# Option B: Manual Pip & NPM Installation
+### Method 2: Manual Setup via Pip & NPM
+
+```bash
+# 1. Install Python requirements
 python3 -m pip install -r requirements.txt
+
+# 2. Install Node.js dependencies
 npm install
-```
 
-> [!TIP]
-> **Troubleshooting Pip in Virtual Environments**:
-> If running `pip install -r requirements.txt` returns `ModuleNotFoundError: No module named 'pip'`, invoke pip via Python module flag:
-> ```bash
-> python3 -m pip install -r requirements.txt
-> ```
-> Or run `python3 setup.py`, which automatically repairs and bootstraps pip using `ensurepip`.
+# 3. Register terminal launcher
+chmod +x bin/Habit
+mkdir -p ~/.local/bin
+ln -sf "$(pwd)/bin/Habit" ~/.local/bin/Habit
 
----
-
-#### 3️⃣ Launch & Build Commands
-
-##### 🌐 Web Browser Local Development
-```bash
-# Start Vite local development server
-npm run dev
-```
-Open `http://localhost:3000` in your web browser.
-
-##### 🖥️ Desktop App GUI Development Mode
-```bash
-# Launch Habit OS inside an Electron desktop window
-npm run electron:dev
-```
-
-##### 📦 Build Standalone Executables (Cross-Platform)
-```bash
-# Compile TypeScript & package cross-platform desktop executables
+# 4. Build application
 npm run build
-npm run electron:build
 ```
 
-The output executables and installers will be generated inside the `dist_electron/` directory:
-- **Linux Output**: `dist_electron/Habit OS-1.0.0.AppImage` & `dist_electron/habit-os_1.0.0_amd64.deb`
-- **Windows Output**: `dist_electron/Habit OS Setup 1.0.0.exe` & `dist_electron/Habit OS 1.0.0 Portable.exe`
-- **macOS Output**: `dist_electron/Habit OS-1.0.0.dmg`
-
 ---
 
-## 🛠️ Technology Stack
+## 🔒 Security Architecture & Protocol Upgrades
 
-- **GUI Framework**: Electron (Desktop Runtime) & React 18
-- **Build System**: Vite & TypeScript
-- **State & Storage**: Dexie.js (IndexedDB local-first database)
-- **Local AI Engine**: Ollama (`http://localhost:11434`) & Cloud LLMs
-- **Styling**: Modern Vanilla CSS Design Tokens (Monochromatic High-Contrast Palette)
-- **Icons**: Lucide React
-- **Date Math**: date-fns
-
----
-
-## 🔒 Privacy & Local-First Philosophy
-
-- **Zero Mandatory Cloud Dependencies**: Your database lives exclusively inside your local device storage.
-- **Granular AI Privacy Controls**: Control exactly which metrics (Habits, Tasks, Focus, Journal) are shared with AI providers.
-- **Master Password Security**: Database wipes and exports require master password authorization.
+- **Electron Security**:
+  - `contextIsolation: true`
+  - `nodeIntegration: false`
+  - `sandbox: true`
+  - `webSecurity: true`
+  - Secure external URL handler (`setWindowOpenHandler` enforcing `http:`/`https:` browser delegation)
+- **Content Security Policy (CSP)**: Hardened CSP headers in `index.html`.
+- **Master App Password**: Password verification prompt protecting database wipes (`Clear Entire Database`) and data exports in Settings.
 
 ---
 

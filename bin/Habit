@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Habit OS CLI Entry Point Launcher
+# Executes the desktop application directly from the terminal
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_ROOT" || exit 1
+
+echo "Launching Habit OS Personal Productivity Desktop Application..."
+
+if [ -f "$PROJECT_ROOT/dist/index.html" ]; then
+    NODE_ENV=production npx electron "$PROJECT_ROOT/electron/main.js" "$@"
+else
+    npm run build && NODE_ENV=production npx electron "$PROJECT_ROOT/electron/main.js" "$@"
+fi

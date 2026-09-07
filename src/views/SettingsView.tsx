@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, AISettings } from '../db/schema';
 import { resetAllDataToInitialState } from '../db/seed';
-import { getAISettings, saveAISettings, testAIConnection, maskApiKey } from '../services/aiProviderService';
+import { getAISettings, saveAISettings, testAIConnection, detectAIProviderFromKey, maskApiKey } from '../services/aiProviderService';
 import { Download, Upload, Trash2, Sparkles, Lock, ShieldAlert, KeyRound } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
