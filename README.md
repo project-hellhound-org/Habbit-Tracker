@@ -87,7 +87,23 @@ The installer registers `Habit` inside your system executable path (`~/.local/bi
 
 ---
 
-## 💻 Installation & Setup Guide
+## 💻 Modular Setup & Maintenance Scripts
+
+Habit OS features a modular shell script toolkit (Bounty Hunter pattern) for streamlined installation, updates, diagnostics, and cleanup:
+
+```bash
+# 🛠️ Installation & System Initialization
+./install.sh
+
+# 🏥 System Health & Diagnostic Audit
+./doctor.sh
+
+# 🔄 Repository Update & Rebuild
+./update.sh
+
+# 🧹 Clean Uninstallation & Artifact Cleanup
+./uninstall.sh
+```
 
 ### Method 1: Single Command Automated Setup (Recommended)
 
@@ -96,26 +112,14 @@ The installer registers `Habit` inside your system executable path (`~/.local/bi
 git clone https://github.com/project-hellhound-org/Habbit-Tracker.git
 cd Habbit-Tracker
 
-# 2. Run automated initialization (installs Python & Node.js dependencies, registers Habit CLI, pulls Ollama llama3.1, builds bundle)
-python3 setup.py
+# 2. Run automated modular installation
+./install.sh
 ```
 
-### Method 2: Manual Setup via Pip & NPM
+### Method 2: Python Setup Script
 
 ```bash
-# 1. Install Python requirements
-python3 -m pip install -r requirements.txt
-
-# 2. Install Node.js dependencies
-npm install
-
-# 3. Register terminal launcher
-chmod +x bin/Habit
-mkdir -p ~/.local/bin
-ln -sf "$(pwd)/bin/Habit" ~/.local/bin/Habit
-
-# 4. Build application
-npm run build
+python3 setup.py
 ```
 
 ---

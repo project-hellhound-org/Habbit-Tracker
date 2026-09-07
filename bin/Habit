@@ -1,16 +1,25 @@
 #!/usr/bin/env bash
 # Habit OS CLI Entry Point Launcher
-# Executes the desktop application directly from the terminal
+# Resolves canonical repository location regardless of symlink origin
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-cd "$PROJECT_ROOT" || exit 1
+cd "$PROJECT_ROOT" || {
+    echo "[!] Error: Could not change directory to project root: $PROJECT_ROOT"
+    exit 1
+}
 
-echo "Launching Habit OS Personal Productivity Desktop Application..."
-
-if [ -f "$PROJECT_ROOT/dist/index.html" ]; then
-    NODE_ENV=production npx electron "$PROJECT_ROOT/electron/main.js" "$@"
-else
-    npm run build && NODE_ENV=production npx electron "$PROJECT_ROOT/electron/main.js" "$@"
+if [ ! -f "$PROJECT_ROOT/dist/index.html" ]; then
+    echo "[*] Initializing Habit OS production static bundle..."
+    npm run build >/dev/null 2>&1
 fi
+
+echo "[✓] Launching Habit OS Personal Productivity Workstation..."
+exec npx electron "$PROJECT_ROOT/electron/main.js" "$@"
