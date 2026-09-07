@@ -15,7 +15,6 @@ export const DEFAULT_AI_SETTINGS: AISettings = {
     allowTaskData: true,
     allowProjectData: true,
     allowGoalData: true,
-    allowFocusData: true,
     allowJournalData: false,
     allowHistoricalData: true,
   },

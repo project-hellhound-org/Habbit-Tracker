@@ -1,11 +1,10 @@
-import { db, AISettings, HabitLog, Task, FocusSession, JournalEntry } from '../db/schema';
+import { db, AISettings, HabitLog, Task, JournalEntry } from '../db/schema';
 import { format, subDays } from 'date-fns';
 
 export interface AIContextData {
   summary: string;
   habitsData?: any;
   tasksData?: any;
-  focusData?: any;
   journalData?: any;
   metricsUsed: string[];
 }
@@ -20,7 +19,6 @@ export async function getAIContext(
 
   let habitsSummary: any = null;
   let tasksSummary: any = null;
-  let focusSummary: any = null;
   let journalSummary: any = null;
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -52,43 +50,22 @@ export async function getAIContext(
 
   if (privacy.allowTaskData && (queryLower.includes('task') || queryLower.includes('overdue') || queryLower.includes('project') || !entityContext)) {
     const tasks = await db.tasks.toArray();
-    const todo = tasks.filter((t: Task) => t.status === 'todo').length;
     const completed = tasks.filter((t: Task) => t.status === 'completed').length;
-    const inProgress = tasks.filter((t: Task) => t.status === 'in_progress').length;
-    const overdue = tasks.filter((t: Task) => t.dueDate && t.dueDate < todayStr && t.status !== 'completed').length;
+    const planned = tasks.filter((t: Task) => t.status === 'planned' || t.status === 'todo').length;
+    const overdue = tasks.filter((t: Task) => (t.dueDate || t.endDate) && (t.dueDate! < todayStr || t.endDate! < todayStr) && t.status !== 'completed').length;
     const critical = tasks.filter((t: Task) => t.priority === 'critical' && t.status !== 'completed').length;
 
     tasksSummary = {
       totalTasks: tasks.length,
       completed,
-      inProgress,
-      todo,
+      planned,
       overdue,
       critical,
       recentCriticalTasks: tasks
         .filter((t: Task) => t.priority === 'critical' && t.status !== 'completed')
-        .map((t: Task) => ({ title: t.title, dueDate: t.dueDate })),
+        .map((t: Task) => ({ title: t.title, endDate: t.endDate || t.dueDate })),
     };
     metricsUsed.push('Task Workload & Overdue Statistics');
-  }
-
-  if (privacy.allowFocusData && (queryLower.includes('focus') || queryLower.includes('time') || queryLower.includes('efficiency') || queryLower.includes('interrupt') || !entityContext)) {
-    const focusSessions = await db.focusSessions.toArray();
-    const completedSessions = focusSessions.filter((f: FocusSession) => f.status === 'completed');
-    const totalVerifiedSecs = completedSessions.reduce((sum: number, s: FocusSession) => sum + s.verifiedSeconds, 0);
-    const totalInterruptedSecs = completedSessions.reduce((sum: number, s: FocusSession) => sum + s.interruptedSeconds, 0);
-    const totalElapsedSecs = completedSessions.reduce((sum: number, s: FocusSession) => sum + s.elapsedSeconds, 0);
-
-    const verifiedMins = Math.round(totalVerifiedSecs / 60);
-    const efficiency = totalElapsedSecs > 0 ? Math.round((totalVerifiedSecs / totalElapsedSecs) * 100) : 100;
-
-    focusSummary = {
-      totalCompletedSessions: completedSessions.length,
-      totalVerifiedFocusMinutes: verifiedMins,
-      totalInterruptedMinutes: Math.round(totalInterruptedSecs / 60),
-      focusEfficiencyPct: `${efficiency}%`,
-    };
-    metricsUsed.push('Verified Focus Minutes & Efficiency');
   }
 
   if (privacy.allowJournalData && (queryLower.includes('journal') || queryLower.includes('mood') || queryLower.includes('energy') || queryLower.includes('win') || queryLower.includes('blocker'))) {
@@ -110,7 +87,6 @@ export async function getAIContext(
 User Context Date: ${todayStr}
 Habits Overview: ${JSON.stringify(habitsSummary)}
 Tasks Overview: ${JSON.stringify(tasksSummary)}
-Focus Overview: ${JSON.stringify(focusSummary)}
 Journal Overview: ${JSON.stringify(journalSummary)}
   `.trim();
 
@@ -118,7 +94,6 @@ Journal Overview: ${JSON.stringify(journalSummary)}
     summary: summaryText,
     habitsData: habitsSummary,
     tasksData: tasksSummary,
-    focusData: focusSummary,
     journalData: journalSummary,
     metricsUsed,
   };
@@ -148,18 +123,18 @@ export async function generateBuiltinAnalyticalResponse(
 
   if (isGreeting) {
     let text = `${toneHeader}Hello! 👋 I am your **AI Productivity Analyst** for **Habit OS**.\n\n`;
-    text += `I can help you analyze your stored habits, task workloads, verified focus efficiency, and daily productivity scores.\n\n`;
+    text += `I can help you analyze your habit specifications, task workloads, calendar schedules, and daily review snapshots.\n\n`;
     text += `**What would you like to explore today?**\n`;
     text += `* Ask *"Analyze Today"* for a complete performance summary.\n`;
-    text += `* Ask *"Review My Habits"* to inspect your habit streaks.\n`;
-    text += `* Ask *"Explain Focus Efficiency"* to investigate interruptions.\n`;
+    text += `* Ask *"Review My Habits"* to inspect habit streaks and specifications.\n`;
+    text += `* Ask *"Analyze Task Workload"* to review deadlines and overdue items.\n`;
 
     return {
       text,
       suggestedPrompts: [
         'Analyze Today',
         'Review My Habits',
-        'Explain Focus Efficiency',
+        'Analyze Task Workload',
         'What should I improve next week?',
       ],
     };
@@ -168,18 +143,15 @@ export async function generateBuiltinAnalyticalResponse(
   if (q.includes('productivity') || q.includes('how am i doing') || q.includes('analyze today') || q.includes('summary')) {
     const habitsCount = contextData.habitsData?.habits?.length || 0;
     const overdueTasks = contextData.tasksData?.overdue || 0;
-    const focusMins = contextData.focusData?.totalVerifiedFocusMinutes || 0;
-    const efficiency = contextData.focusData?.focusEfficiencyPct || '100%';
 
     let text = `${toneHeader}### Productivity Analysis Summary (${todayStr})\n\n`;
     text += `Based on your recorded data for the last 30 days:\n\n`;
-    text += `* **Habits Tracked**: ${habitsCount} active habits.\n`;
-    text += `* **Task Status**: ${contextData.tasksData?.completed || 0} completed, ${contextData.tasksData?.todo || 0} pending, and **${overdueTasks} overdue tasks**.\n`;
-    text += `* **Verified Focus**: **${focusMins} minutes** logged with a **${efficiency} focus efficiency**.\n\n`;
+    text += `* **Habits Tracked**: ${habitsCount} active habit specifications.\n`;
+    text += `* **Task Status**: ${contextData.tasksData?.completed || 0} completed, ${contextData.tasksData?.planned || 0} planned, and **${overdueTasks} overdue tasks**.\n\n`;
 
     if (overdueTasks > 0) {
       text += `> [!WARNING]\n`;
-      text += `> You currently have **${overdueTasks} overdue task(s)**. Clearing these high-priority items will immediately improve your weekly Productivity Score.`;
+      text += `> You currently have **${overdueTasks} overdue task(s)**. Clearing these high-priority items will immediately improve your Daily Review Productivity Score.`;
     } else {
       text += `> [!NOTE]\n`;
       text += `> You have 0 overdue tasks. Great job keeping your workload clean!`;
@@ -189,7 +161,7 @@ export async function generateBuiltinAnalyticalResponse(
       text,
       suggestedPrompts: [
         'Which habits need improvement?',
-        'Why is my focus efficiency changing?',
+        'Analyze my task workload',
         'What should I focus on next week?',
       ],
     };
@@ -199,13 +171,13 @@ export async function generateBuiltinAnalyticalResponse(
     const habitsList = contextData.habitsData?.habits || [];
     if (habitsList.length === 0) {
       return {
-        text: `${toneHeader}You currently have no active habits recorded. Would you like to create one now?`,
+        text: `${toneHeader}You currently have no active habit specifications recorded. Would you like to create one now?`,
         actionCards: [
           {
             id: `action-${Date.now()}`,
             type: 'create_habit',
-            title: 'Create Daily Meditation Habit',
-            payload: { name: 'Daily Meditation', category: 'Personal', targetDaysPerWeek: 7 },
+            title: 'Create Strength Training Specification',
+            payload: { name: 'Strength Training', category: 'Fitness & Health' },
           },
         ],
       };
@@ -221,50 +193,7 @@ export async function generateBuiltinAnalyticalResponse(
       text,
       suggestedPrompts: [
         'How can I improve my weakest habit?',
-        'Analyze my focus time',
-        'Summarize my tasks',
-      ],
-    };
-  }
-
-  if (q.includes('focus') || q.includes('interrupt') || q.includes('time')) {
-    const focusMins = contextData.focusData?.totalVerifiedFocusMinutes || 0;
-    const interruptedMins = contextData.focusData?.totalInterruptedMinutes || 0;
-    const eff = contextData.focusData?.focusEfficiencyPct || '100%';
-
-    let text = `${toneHeader}### ⏱️ Focus & Interruption Analysis\n\n`;
-    text += `* **Verified Focus Time**: **${focusMins} minutes**\n`;
-    text += `* **Interrupted Time**: **${interruptedMins} minutes**\n`;
-    text += `* **Focus Efficiency**: **${eff}**\n\n`;
-
-    if (interruptedMins > 0) {
-      text += `**Insight**: Interruption time accounted for a drop in overall session efficiency. Setting longer grace periods or switching to Guided Focus Mode will enforce periodic verification checkpoints.`;
-    } else {
-      text += `**Insight**: Zero interruptions recorded in recent sessions. High focus retention!`;
-    }
-
-    return {
-      text,
-      suggestedPrompts: [
-        'Analyze my overdue tasks',
-        'What are my top productivity blockers?',
-      ],
-    };
-  }
-
-  if (q.includes('improve') || q.includes('next week') || q.includes('recommend') || q.includes('suggestion')) {
-    let text = `${toneHeader}### 💡 Strategic Improvement Recommendations\n\n`;
-    text += `Based on your productivity baseline:\n\n`;
-    text += `1. **Establish 2 Core Habits**: Start with small, daily routines (e.g. 15m Reading or Daily Planning).\n`;
-    text += `2. **Schedule High-Priority Focus Blocks**: Dedicate at least 30 minutes of Guided Focus to top tasks before midday.\n`;
-    text += `3. **Prevent Overdue Debt**: Clear small backlog tasks early to keep your task completion score high.\n`;
-
-    return {
-      text,
-      suggestedPrompts: [
-        'Analyze Today',
-        'Review My Habits',
-        'Explain Focus Efficiency',
+        'Summarize my task workload',
       ],
     };
   }
@@ -272,13 +201,10 @@ export async function generateBuiltinAnalyticalResponse(
   let fallbackText = `${toneHeader}### Factual Data Summary\n\n`;
   fallbackText += `I queried your local productivity database:\n\n`;
   if (contextData.tasksData) {
-    fallbackText += `* **Pending Tasks**: ${contextData.tasksData.todo} | **Completed Tasks**: ${contextData.tasksData.completed} | **Overdue**: ${contextData.tasksData.overdue}\n`;
-  }
-  if (contextData.focusData) {
-    fallbackText += `* **Verified Focus Time**: ${contextData.focusData.totalVerifiedFocusMinutes} minutes\n`;
+    fallbackText += `* **Planned Tasks**: ${contextData.tasksData.planned} | **Completed Tasks**: ${contextData.tasksData.completed} | **Overdue**: ${contextData.tasksData.overdue}\n`;
   }
   if (contextData.habitsData) {
-    fallbackText += `* **Active Habits**: ${contextData.habitsData.totalActiveHabits}\n`;
+    fallbackText += `* **Active Habit Specifications**: ${contextData.habitsData.totalActiveHabits}\n`;
   }
 
   return {
@@ -286,7 +212,7 @@ export async function generateBuiltinAnalyticalResponse(
     suggestedPrompts: [
       'Analyze Today',
       'Review My Habits',
-      'Analyze Focus Efficiency',
+      'Analyze Task Workload',
     ],
   };
 }

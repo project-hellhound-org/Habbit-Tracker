@@ -1,45 +1,27 @@
 import Dexie, { Table } from 'dexie';
 
-export interface FocusCheckpoint {
-  id?: string;
-  timestamp: string;
-  verified?: boolean;
-  responseSeconds?: number;
-  response?: string;
-  checkpointType?: string;
-  notes?: string;
-}
-
-export interface FocusInterruption {
-  id?: string;
-  timestamp: string;
-  reason: string;
-  durationSeconds?: number;
-  durationMinutes: number;
-  notes?: string;
-}
-
 export interface Habit {
   id: string;
   name: string;
   description: string;
-  category: string;
+  category: 'Fitness & Health' | 'Learning & Growth' | 'Work & Projects' | string;
   icon?: string;
   frequency?: 'daily' | 'weekly' | 'custom_days';
   frequencyType?: string;
   frequencyConfig?: any;
   targetDaysPerWeek?: number;
   customDays?: number[];
-  targetValue: number;
-  unit: string;
-  trackingType?: string;
+  targetValue?: number;
+  unit?: string;
   timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'anytime';
+  startTime?: string; // e.g. "08:00"
+  endTime?: string;   // e.g. "09:00"
   color: string;
   difficulty?: string;
   priority?: string;
   notes?: string;
   startDate?: string;
-  endDate?: string;
+  endDate?: string;   // Defined completion timeline
   archived: number | boolean;
   createdAt: string;
   updatedAt?: string;
@@ -59,18 +41,22 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'backlog' | 'todo' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'planned' | 'completed' | 'remaining' | 'overdue' | 'cancelled' | 'deferred' | 'todo' | 'in_progress' | 'backlog';
   priority: 'low' | 'medium' | 'high' | 'critical';
+  startDate?: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
   dueDate?: string;
   dueTime?: string | null;
-  timeRange?: string;
+  dailyTimeLimitMinutes?: number; // Daily time allocation limit
+  estimatedDays?: number;
+  estimatedHours?: number;
+  estimatedMinutes?: number;
   projectId?: string | null;
   goalId?: string | null;
-  tags: string[];
+  tags?: string[];
   notes?: string;
-  estimatedMinutes?: number;
-  trackedMinutes?: number;
-  verifiedMinutes?: number;
   completedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -122,42 +108,6 @@ export interface Goal {
   updatedAt: string;
 }
 
-export interface FocusSession {
-  id: string;
-  title?: string;
-  category?: string;
-  taskId?: string | null;
-  projectId?: string | null;
-  goalId?: string | null;
-  mode: 'guided' | 'continuous' | 'goal_based';
-  targetDurationMinutes: number;
-  verificationIntervalMinutes: number;
-  gracePeriodMinutes?: number;
-  associatedType?: 'task' | 'project' | 'goal' | 'none';
-  associatedId?: string | null;
-  associatedTitle?: string;
-  notes?: string;
-  startTimestamp: string;
-  endTimestamp?: string | null;
-  elapsedSeconds: number;
-  verifiedSeconds: number;
-  interruptedSeconds: number;
-  unverifiedSeconds: number;
-  efficiencyPct?: number;
-  verificationCheckpoints?: FocusCheckpoint[];
-  checkpoints: FocusCheckpoint[];
-  interruptions: FocusInterruption[];
-  status: 'active' | 'completed' | 'interrupted' | 'cancelled';
-}
-
-export interface ActiveSessionState {
-  id: string;
-  session: FocusSession;
-  lastHeartbeatISO: string;
-  nextVerificationISO?: string;
-  isVerificationPromptOpen?: boolean;
-}
-
 export interface JournalEntry {
   id: string;
   date: string;
@@ -174,13 +124,32 @@ export interface JournalEntry {
   updatedAt: string;
 }
 
+export interface DailySnapshotData {
+  productivityScore: string;     // e.g. "82/100"
+  habitCompletion: string;       // e.g. "8/10"
+  taskCompletion: string;        // e.g. "7/9"
+  timeLogged: string;            // e.g. "5h 24m"
+  focusEfficiency: string;       // e.g. "87%"
+  goalsProgress: string;         // e.g. "3/4"
+  overdueTasks: number;          // e.g. 2
+  currentStreak: string;         // e.g. "14 days"
+  dailyCompletionRate: string;   // e.g. "80%"
+  taskReviewStats: {
+    planned: number;
+    completed: number;
+    remaining: number;
+    overdue: number;
+    cancelled: number;
+    deferred: number;
+  };
+}
+
 export interface DailyReview {
   id: string;
   date: string;
   productivityScore?: number;
   habitCompletionPct?: number;
   taskCompletionPct?: number;
-  focusMinutes?: number;
   accomplished?: string;
   missed?: string;
   whyMissed?: string;
@@ -189,6 +158,7 @@ export interface DailyReview {
   energy?: number;
   reflection?: string;
   rating?: number;
+  snapshotData?: DailySnapshotData;
   createdAt?: string;
   completedAt?: string;
 }
@@ -224,18 +194,12 @@ export interface AppSettings {
   streakFreezeActiveUntil?: string | null;
   consecutiveDays100Pct: number;
   lastLoginDate?: string;
-  verificationSettings: {
-    defaultIntervalMinutes: number;
-    gracePeriodMinutes: number;
-    verificationRequired: boolean;
-    excludeUnverifiedFromProductivity: boolean;
-  };
 }
 
 export interface AIConversation {
   id: string;
   title: string;
-  entityType?: 'habit' | 'task' | 'project' | 'goal' | 'focus' | 'general';
+  entityType?: 'habit' | 'task' | 'project' | 'goal' | 'general';
   entityId?: string;
   createdAt: string;
   updatedAt: string;
@@ -274,7 +238,6 @@ export interface AISettings {
     allowTaskData: boolean;
     allowProjectData: boolean;
     allowGoalData: boolean;
-    allowFocusData: boolean;
     allowJournalData: boolean;
     allowHistoricalData: boolean;
   };
@@ -288,8 +251,6 @@ export class HabitOSDatabase extends Dexie {
   subtasks!: Table<Subtask>;
   projects!: Table<Project>;
   goals!: Table<Goal>;
-  focusSessions!: Table<FocusSession>;
-  activeSessionState!: Table<ActiveSessionState>;
   journalEntries!: Table<JournalEntry>;
   dailyReviews!: Table<DailyReview>;
   categories!: Table<Category>;
@@ -301,15 +262,13 @@ export class HabitOSDatabase extends Dexie {
 
   constructor() {
     super('HabitOSDB');
-    this.version(2).stores({
+    this.version(3).stores({
       habits: 'id, name, category, archived',
       habitLogs: 'id, habitId, date, status, [habitId+date]',
-      tasks: 'id, title, status, priority, dueDate, projectId, goalId',
+      tasks: 'id, title, status, priority, dueDate, startDate, endDate, projectId, goalId',
       subtasks: 'id, taskId, completed',
       projects: 'id, name, category, status, goalId',
       goals: 'id, title, category, status',
-      focusSessions: 'id, mode, status, startTimestamp',
-      activeSessionState: 'id',
       journalEntries: 'id, date, mood, energy',
       dailyReviews: 'id, date',
       categories: 'id, name',

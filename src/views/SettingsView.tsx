@@ -60,7 +60,6 @@ export const SettingsView: React.FC = () => {
       streakFreezeEarned: settings?.streakFreezeEarned || 0,
       streakFreezeActiveUntil: settings?.streakFreezeActiveUntil || null,
       consecutiveDays100Pct: settings?.consecutiveDays100Pct || 0,
-      verificationSettings: { defaultIntervalMinutes: 30, gracePeriodMinutes: 2, verificationRequired: true, excludeUnverifiedFromProductivity: true },
     });
 
     await saveAISettings({
@@ -89,7 +88,7 @@ export const SettingsView: React.FC = () => {
       temperature,
       tone: aiTone,
       behavioralFramework,
-      privacy: { allowHabitData: true, allowTaskData: true, allowProjectData: true, allowGoalData: true, allowFocusData: true, allowJournalData: false, allowHistoricalData: true },
+      privacy: { allowHabitData: true, allowTaskData: true, allowProjectData: true, allowGoalData: true, allowJournalData: false, allowHistoricalData: true },
       enableStreaming: true,
     });
     setTestResult(res);

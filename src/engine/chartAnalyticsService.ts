@@ -1,4 +1,4 @@
-import { HabitLog, Task, FocusSession } from '../db/schema';
+import { HabitLog, Task } from '../db/schema';
 import { format, subDays } from 'date-fns';
 
 export interface DailyTrendPoint {
@@ -6,13 +6,11 @@ export interface DailyTrendPoint {
   displayLabel: string;
   habitCompletionPct: number;
   taskCompletionCount: number;
-  focusMinutes: number;
 }
 
 export function generate30DayAnalyticsTrend(
   habitLogs: HabitLog[],
-  tasks: Task[],
-  focusSessions: FocusSession[]
+  tasks: Task[]
 ): DailyTrendPoint[] {
   const points: DailyTrendPoint[] = [];
 
@@ -31,20 +29,11 @@ export function generate30DayAnalyticsTrend(
       (t) => t.status === 'completed' && t.completedAt && t.completedAt.startsWith(dateStr)
     ).length;
 
-    // Focus minutes on this day
-    const daySessions = focusSessions.filter(
-      (f) => f.startTimestamp && f.startTimestamp.startsWith(dateStr) && f.status === 'completed'
-    );
-    const focusMinutes = Math.round(
-      daySessions.reduce((sum, s) => sum + (s.verifiedSeconds || 0), 0) / 60
-    );
-
     points.push({
       dateStr,
       displayLabel,
       habitCompletionPct,
       taskCompletionCount: completedTasksOnDay,
-      focusMinutes,
     });
   }
 

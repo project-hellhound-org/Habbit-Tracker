@@ -4,7 +4,7 @@ import { db } from '../db/schema';
 import { ActiveTab } from '../App';
 import { StreakFlameIndicator } from './StreakFlameIndicator';
 import { StreakFreezeModal } from './StreakFreezeModal';
-import { Sparkles, Calendar, Clock } from 'lucide-react';
+import { Sparkles, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface HeaderProps {
@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   const totalHabitCount = habits.length || 1;
   const completionPct = habits.length > 0 ? Math.round((completedTodayCount / totalHabitCount) * 100) : 100;
 
-  const currentStreak = completedTodayCount > 0 ? 5 : 0;
+  const currentStreak = completedTodayCount > 0 ? 14 : 0;
   const hasFreeze = (settings?.streakFreezeEarned || 0) > 0;
 
   const [isFreezeModalOpen, setIsFreezeModalOpen] = useState(false);
@@ -48,9 +48,6 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
         />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button className="btn btn-secondary btn-xs" onClick={() => setActiveTab('focus')}>
-            <Clock size={12} /> Start Focus
-          </button>
           <button className="btn btn-primary btn-xs" onClick={() => setActiveTab('insights')}>
             <Sparkles size={12} /> AI Analyst
           </button>

@@ -5,7 +5,6 @@ import { Header } from './components/Header';
 import { DashboardView } from './views/DashboardView';
 import { HabitsView } from './views/HabitsView';
 import { TasksView } from './views/TasksView';
-import { FocusView } from './views/FocusView';
 import { JournalView } from './views/JournalView';
 import { AnalyticsView } from './views/AnalyticsView';
 import { CalendarView } from './views/CalendarView';
@@ -16,7 +15,6 @@ export type ActiveTab =
   | 'dashboard'
   | 'habits'
   | 'tasks'
-  | 'focus'
   | 'journal'
   | 'analytics'
   | 'calendar'
@@ -35,8 +33,8 @@ export const App: React.FC = () => {
 
   if (!isInitialized) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#080a0f', color: '#ffffff' }}>
-        <h2>Loading Habit OS...</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0A0A0A', color: '#F5F5F2' }}>
+        <h2>Initializing Habit OS...</h2>
       </div>
     );
   }
@@ -50,7 +48,6 @@ export const App: React.FC = () => {
           {activeTab === 'dashboard' && <DashboardView setActiveTab={setActiveTab} />}
           {activeTab === 'habits' && <HabitsView />}
           {activeTab === 'tasks' && <TasksView />}
-          {activeTab === 'focus' && <FocusView />}
           {activeTab === 'journal' && <JournalView />}
           {activeTab === 'analytics' && <AnalyticsView />}
           {activeTab === 'calendar' && <CalendarView />}

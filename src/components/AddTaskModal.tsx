@@ -14,11 +14,20 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
-  const [dueDate, setDueDate] = useState(todayStr);
-  const [dueTime, setDueTime] = useState('17:00');
-  const [timeRange, setTimeRange] = useState('09:00 - 10:00');
-  const [estimatedMinutes, setEstimatedMinutes] = useState<number>(30);
-  const [tagInput, setTagInput] = useState('');
+
+  // Start & End Date/Time Selection Column
+  const [startDate, setStartDate] = useState(todayStr);
+  const [startTime, setStartTime] = useState('09:00');
+  const [endDate, setEndDate] = useState(todayStr);
+  const [endTime, setEndTime] = useState('17:00');
+
+  // Daily Time Allocation Limit Field
+  const [dailyTimeLimitHours, setDailyTimeLimitHours] = useState<number>(2);
+
+  // Dedicated Estimated Duration Segmented by Days, Hours, Minutes
+  const [estDays, setEstDays] = useState<number>(0);
+  const [estHours, setEstHours] = useState<number>(4);
+  const [estMins, setEstMins] = useState<number>(30);
 
   if (!isOpen) return null;
 
@@ -26,19 +35,22 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
     e.preventDefault();
     if (!title.trim()) return;
 
-    const tags = tagInput.split(',').map((t) => t.trim()).filter(Boolean);
-
     await db.tasks.add({
       id: `task-${Date.now()}`,
       title: title.trim(),
       description: description.trim(),
-      status: 'todo',
+      status: 'planned',
       priority,
-      dueDate,
-      dueTime,
-      timeRange,
-      estimatedMinutes: Number(estimatedMinutes) || 30,
-      tags,
+      startDate,
+      startTime,
+      endDate,
+      endTime,
+      dueDate: endDate,
+      dueTime: endTime,
+      dailyTimeLimitMinutes: Number(dailyTimeLimitHours) * 60,
+      estimatedDays: Number(estDays) || 0,
+      estimatedHours: Number(estHours) || 0,
+      estimatedMinutes: Number(estMins) || 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -50,10 +62,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div className="glass-card" style={{ width: '100%', maxWidth: '540px', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-secondary)' }}>
+      <div className="glass-card" style={{ width: '100%', maxWidth: '580px', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-secondary)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Calendar size={18} /> Dedicated Task Creation Panel
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem' }}>
+            <Calendar size={18} /> Dedicated Task Creation Specification
           </h3>
           <button className="btn btn-secondary btn-icon btn-xs" onClick={onClose}>
             <X size={16} />
@@ -67,88 +79,138 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
               type="text"
               className="form-input"
               required
-              placeholder="e.g. Complete System Vulnerability Audit..."
+              placeholder="e.g. Architecture Security Review, System Optimization..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Detailed Description</label>
+            <label className="form-label">Detailed Rationale & Scope</label>
             <textarea
               className="form-textarea"
               rows={2}
-              placeholder="Task details, requirements, or scope..."
+              placeholder="Task objectives, scope, or delivery specifications..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div className="form-group">
-              <label className="form-label">Priority Level</label>
-              <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value as any)}>
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-                <option value="critical">Critical Priority</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Target Due Date</label>
-              <input
-                type="date"
-                className="form-input"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-            <div className="form-group">
-              <label className="form-label">Due Time</label>
-              <input
-                type="time"
-                className="form-input"
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Time Range</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. 09:00 - 11:00"
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Estimated Mins</label>
-              <input
-                type="number"
-                min={5}
-                className="form-input"
-                value={estimatedMinutes}
-                onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
-              />
-            </div>
-          </div>
-
           <div className="form-group">
-            <label className="form-label">Tags (comma separated)</label>
+            <label className="form-label">Priority Level</label>
+            <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value as any)}>
+              <option value="low">Low Priority</option>
+              <option value="medium">Medium Priority</option>
+              <option value="high">High Priority</option>
+              <option value="critical">Critical Priority</option>
+            </select>
+          </div>
+
+          {/* Start and End Date/Time Selection Column */}
+          <div style={{ padding: '0.85rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Clock size={14} /> Start & End Schedule Window Column
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label className="form-label">Start Date *</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  required
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Start Time</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label className="form-label">End Date *</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  required
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">End Time</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Daily Time Allocation Limit */}
+          <div className="form-group">
+            <label className="form-label">Daily Time Allocation Limit (Hours per Day)</label>
             <input
-              type="text"
+              type="number"
+              min={0.5}
+              max={24}
+              step={0.5}
               className="form-input"
-              placeholder="e.g. urgent, dev, security"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
+              value={dailyTimeLimitHours}
+              onChange={(e) => setDailyTimeLimitHours(Number(e.target.value))}
             />
+          </div>
+
+          {/* Dedicated Estimated Duration Segmented by Days, Hours, and Minutes */}
+          <div className="form-group">
+            <label className="form-label">Estimated Task Duration Segmented</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <span className="subtitle" style={{ fontSize: '0.7rem' }}>Days</span>
+                <input
+                  type="number"
+                  min={0}
+                  className="form-input"
+                  value={estDays}
+                  onChange={(e) => setEstDays(Number(e.target.value))}
+                />
+              </div>
+
+              <div>
+                <span className="subtitle" style={{ fontSize: '0.7rem' }}>Hours</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  className="form-input"
+                  value={estHours}
+                  onChange={(e) => setEstHours(Number(e.target.value))}
+                />
+              </div>
+
+              <div>
+                <span className="subtitle" style={{ fontSize: '0.7rem' }}>Minutes</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  className="form-input"
+                  value={estMins}
+                  onChange={(e) => setEstMins(Number(e.target.value))}
+                />
+              </div>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>

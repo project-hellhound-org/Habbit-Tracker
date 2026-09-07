@@ -11,21 +11,15 @@ export async function initializeDatabase(): Promise<void> {
       accentColor: '#ffffff',
       weekStartDay: 1,
       productivityWeights: {
-        habitWeight: 40,
-        taskWeight: 30,
-        focusWeight: 20,
+        habitWeight: 50,
+        taskWeight: 40,
+        focusWeight: 0,
         goalWeight: 10,
       },
       streakSkipRule: 'pause',
       streakFreezeEarned: 1,
       streakFreezeActiveUntil: null,
       consecutiveDays100Pct: 5,
-      verificationSettings: {
-        defaultIntervalMinutes: 30,
-        gracePeriodMinutes: 2,
-        verificationRequired: true,
-        excludeUnverifiedFromProductivity: true,
-      },
     };
     await db.settings.add(defaultSettings);
   }
@@ -43,8 +37,6 @@ export async function resetAllDataToInitialState(): Promise<void> {
   await db.subtasks.clear();
   await db.projects.clear();
   await db.goals.clear();
-  await db.focusSessions.clear();
-  await db.activeSessionState.clear();
   await db.journalEntries.clear();
   await db.dailyReviews.clear();
   await db.categories.clear();
