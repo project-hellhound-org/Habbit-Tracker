@@ -185,7 +185,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
             </div>
 
             <div className="form-group">
-              <label className="form-label">End Date (Completion Timeline)</label>
+              <label className="form-label">End Date</label>
               <input
                 type="date"
                 className="form-input"

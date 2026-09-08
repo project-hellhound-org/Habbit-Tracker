@@ -33,8 +33,14 @@ export const App: React.FC = () => {
 
   if (!isInitialized) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0A0A0A', color: '#F5F5F2' }}>
-        <h2>Initializing Habit OS...</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0B0C10', color: '#F5F5F2', gap: '1rem' }}>
+        <img
+          src="public/icon.png"
+          alt="Habit OS Logo"
+          style={{ width: '72px', height: '72px', borderRadius: '16px', boxShadow: '0 0 30px rgba(6, 182, 212, 0.4)', animation: 'editPulse 1.5s infinite alternate ease-in-out' }}
+        />
+        <h2 style={{ fontSize: '1.2rem', letterSpacing: '-0.02em', fontFamily: 'var(--font-heading)' }}>Habit OS</h2>
+        <span className="subtitle" style={{ fontSize: '0.8rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Initializing Local-First Workstation...</span>
       </div>
     );
   }

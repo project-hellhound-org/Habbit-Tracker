@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import { db } from '../db/schema';
-import { X, Plus, Calendar, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { db, Task } from '../db/schema';
+import { X, Plus, Save, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
+  taskToEdit?: Task | null;
 }
 
-export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) => {
+export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, taskToEdit }) => {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
 
   const [title, setTitle] = useState('');
@@ -28,6 +29,33 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
   const [completionHours, setCompletionHours] = useState<number>(2);
   const [completionMinutes, setCompletionMinutes] = useState<number>(30);
 
+  useEffect(() => {
+    if (taskToEdit) {
+      setTitle(taskToEdit.title || '');
+      setDescription(taskToEdit.description || '');
+      setPriority(taskToEdit.priority || 'medium');
+      setStartDate(taskToEdit.startDate || todayStr);
+      setStartTime(taskToEdit.startTime || '09:00');
+      setEndDate(taskToEdit.endDate || taskToEdit.dueDate || todayStr);
+      setEndTime(taskToEdit.endTime || taskToEdit.dueTime || '17:00');
+      setDailyTimeLimitHours(taskToEdit.dailyTimeLimitMinutes ? taskToEdit.dailyTimeLimitMinutes / 60 : 2);
+      const durationMins = taskToEdit.completionTimeMinutes || 150;
+      setCompletionHours(Math.floor(durationMins / 60));
+      setCompletionMinutes(durationMins % 60);
+    } else {
+      setTitle('');
+      setDescription('');
+      setPriority('medium');
+      setStartDate(todayStr);
+      setStartTime('09:00');
+      setEndDate(todayStr);
+      setEndTime('17:00');
+      setDailyTimeLimitHours(2);
+      setCompletionHours(2);
+      setCompletionMinutes(30);
+    }
+  }, [taskToEdit, isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,26 +64,41 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
 
     const totalDurationMinutes = (Number(completionHours) || 0) * 60 + (Number(completionMinutes) || 0);
 
-    await db.tasks.add({
-      id: `task-${Date.now()}`,
-      title: title.trim(),
-      description: description.trim(),
-      status: 'planned',
-      priority,
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-      dueDate: endDate,
-      dueTime: endTime,
-      dailyTimeLimitMinutes: Number(dailyTimeLimitHours) * 60,
-      completionTimeMinutes: totalDurationMinutes,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    if (taskToEdit) {
+      await db.tasks.update(taskToEdit.id, {
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        dueDate: endDate,
+        dueTime: endTime,
+        dailyTimeLimitMinutes: Number(dailyTimeLimitHours) * 60,
+        completionTimeMinutes: totalDurationMinutes,
+        updatedAt: new Date().toISOString(),
+      });
+    } else {
+      await db.tasks.add({
+        id: `task-${Date.now()}`,
+        title: title.trim(),
+        description: description.trim(),
+        status: 'planned',
+        priority,
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        dueDate: endDate,
+        dueTime: endTime,
+        dailyTimeLimitMinutes: Number(dailyTimeLimitHours) * 60,
+        completionTimeMinutes: totalDurationMinutes,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
 
-    setTitle('');
-    setDescription('');
     onClose();
   };
 
@@ -64,7 +107,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
       <div className="glass-card" style={{ width: '100%', maxWidth: '580px', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-secondary)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
           <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem' }}>
-            <Calendar size={18} /> Dedicated Task Creation Specification
+            <Calendar size={18} /> {taskToEdit ? 'Edit Task Specification' : 'Add Task Specification'}
           </h3>
           <button className="btn btn-secondary btn-icon btn-xs" onClick={onClose}>
             <X size={16} />
@@ -206,7 +249,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose }) =
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              <Plus size={14} /> Add Task
+              {taskToEdit ? <Save size={14} /> : <Plus size={14} />} {taskToEdit ? 'Save Task Changes' : 'Add Task'}
             </button>
           </div>
         </form>
