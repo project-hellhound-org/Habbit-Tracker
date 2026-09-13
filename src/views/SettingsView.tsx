@@ -9,28 +9,26 @@ export const SettingsView: React.FC = () => {
   const settings = useLiveQuery(() => db.settings.get('default'));
   const aiSettingsLive = useLiveQuery(() => db.aiSettings.get('default'));
 
-  // Reactive State Persistent Bindings
-  const [userName, setUserName] = useState('User');
-  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('dark');
-  const [accentColor, setAccentColor] = useState<string>('#ffffff');
+  const [userName, setUserName] = useState(settings?.userName || 'User');
+  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>(settings?.theme || 'dark');
+  const [accentColor, setAccentColor] = useState<string>(settings?.accentColor || '#ffffff');
 
-  // Master App Password State & Authentication Logic
-  const [appPasswordInput, setAppPasswordInput] = useState('');
+  // Master App Password State & Update Verification
+  const [appPasswordInput, setAppPasswordInput] = useState(settings?.appPassword || '');
   const [currentPasswordInput, setCurrentPasswordInput] = useState('');
-  const [passwordSaveError, setPasswordSaveError] = useState('');
-  
+  const [passwordUpdateError, setPasswordUpdateError] = useState('');
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [verifyPasswordPrompt, setVerifyPasswordPrompt] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [pendingAction, setPendingAction] = useState<'clear_db' | 'export_data' | null>(null);
 
-  // Simplified AI Configuration (Local vs Cloud Mode)
-  const [aiMode, setAiMode] = useState<'local' | 'cloud'>('local');
-  const [aiProvider, setAiProvider] = useState<AISettings['provider']>('ollama');
-  const [aiModel, setAiModel] = useState<string>('llama3.1');
-  const [apiKeyInput, setApiKeyInput] = useState<string>('');
-  const [customEndpoint, setCustomEndpoint] = useState<string>('');
-  const [temperature, setTemperature] = useState<number>(0.7);
+  // Simplified AI Configuration: Local vs Cloud
+  const [aiMode, setAiMode] = useState<'local' | 'cloud'>(aiSettingsLive?.mode || 'local');
+  const [aiProvider, setAiProvider] = useState<AISettings['provider']>(aiSettingsLive?.provider || 'ollama');
+  const [aiModel, setAiModel] = useState<string>(aiSettingsLive?.model || 'llama3.1');
+  const [apiKeyInput, setApiKeyInput] = useState<string>(aiSettingsLive?.apiKey || '');
+  const [customEndpoint, setCustomEndpoint] = useState<string>(aiSettingsLive?.endpoint || 'http://localhost:11434/v1/chat/completions');
+  const [temperature, setTemperature] = useState<number>(aiSettingsLive?.temperature || 0.7);
 
   const [aiTone, setAiTone] = useState<AISettings['tone']>('analytical');
   const [behavioralFramework, setBehavioralFramework] = useState<string>(
@@ -38,8 +36,9 @@ export const SettingsView: React.FC = () => {
   );
 
   const [testResult, setTestResult] = useState<{ success?: boolean; message?: string } | null>(null);
+  const [localModelsList, setLocalModelsList] = useState<string[]>(['llama3.1', 'qwen2.5:3b-instruct', 'gemma2:2b']);
 
-  // Bind settings reactively to prevent reset on tab navigation
+  // Sync Settings state on load (Fixes Settings Persistence Reset bug)
   useEffect(() => {
     if (settings) {
       setUserName(settings.userName || 'User');
@@ -47,39 +46,53 @@ export const SettingsView: React.FC = () => {
       setAccentColor(settings.accentColor || '#ffffff');
       setAppPasswordInput(settings.appPassword || '');
     }
-  }, [settings]);
+  }, [settings?.userName, settings?.theme, settings?.accentColor, settings?.appPassword]);
 
   useEffect(() => {
     getAISettings().then((res) => {
-      setAiProvider(res.provider);
-      setAiModel(res.model);
+      setAiMode(res.mode || (res.provider === 'ollama' ? 'local' : 'cloud'));
+      setAiProvider(res.provider || 'ollama');
+      setAiModel(res.model || 'llama3.1');
       setApiKeyInput(res.apiKey || '');
-      setCustomEndpoint(res.endpoint || '');
-      setTemperature(res.temperature);
+      setCustomEndpoint(res.endpoint || 'http://localhost:11434/v1/chat/completions');
+      setTemperature(res.temperature || 0.7);
       setAiTone(res.tone || 'analytical');
       setBehavioralFramework(res.behavioralFramework || '');
-      setAiMode(res.provider === 'ollama' || res.provider === 'builtin' ? 'local' : 'cloud');
     });
-  }, [aiSettingsLive?.provider]);
+
+    // Fetch local Ollama models dynamically
+    fetch('http://localhost:11434/api/tags')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && Array.isArray(data.models)) {
+          const names = data.models.map((m: any) => m.name);
+          if (names.length > 0) setLocalModelsList(names);
+        }
+      })
+      .catch(() => {});
+  }, [aiSettingsLive?.provider, aiSettingsLive?.model]);
 
   const handleApiKeyChange = (val: string) => {
     setApiKeyInput(val);
     if (val.trim()) {
       const detected = detectAIProviderFromKey(val);
-      setAiProvider(detected.provider as any);
-      setAiModel(detected.suggestedModel);
+      if (detected.provider !== 'custom') {
+        setAiMode('cloud');
+        setAiProvider(detected.provider as any);
+        setAiModel(detected.suggestedModel);
+      }
     }
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordSaveError('');
+    setPasswordUpdateError('');
 
-    // Password Update Logic Authentication
+    // Require current password when changing password
     const existingPassword = settings?.appPassword;
     if (existingPassword && appPasswordInput !== existingPassword) {
       if (!currentPasswordInput || currentPasswordInput !== existingPassword) {
-        setPasswordSaveError('Current password verification failed. Password update denied.');
+        setPasswordUpdateError('Current password is required to save a new password update.');
         return;
       }
     }
@@ -98,14 +111,13 @@ export const SettingsView: React.FC = () => {
       consecutiveDays100Pct: settings?.consecutiveDays100Pct || 0,
     });
 
-    const targetProvider = aiMode === 'local' ? 'ollama' : aiProvider;
-    const targetEndpoint = aiMode === 'local' ? 'http://localhost:11434/v1/chat/completions' : customEndpoint;
-
+    const activeProvider = aiMode === 'local' ? 'ollama' : aiProvider;
     await saveAISettings({
-      provider: targetProvider,
+      mode: aiMode,
+      provider: activeProvider,
       model: aiModel,
       apiKey: apiKeyInput,
-      endpoint: targetEndpoint,
+      endpoint: aiMode === 'local' ? 'http://localhost:11434/v1/chat/completions' : customEndpoint,
       temperature,
       tone: aiTone,
       behavioralFramework,
@@ -114,20 +126,19 @@ export const SettingsView: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.setProperty('--accent-primary', accentColor);
     setCurrentPasswordInput('');
-    alert('Settings & User Credentials saved successfully.');
+    alert('Settings & User Profile saved successfully.');
   };
 
   const handleTestAIConnection = async () => {
     setTestResult(null);
-    const targetProvider = aiMode === 'local' ? 'ollama' : aiProvider;
-    const targetEndpoint = aiMode === 'local' ? 'http://localhost:11434/v1/chat/completions' : customEndpoint;
-
+    const activeProvider = aiMode === 'local' ? 'ollama' : aiProvider;
     const res = await testAIConnection({
       id: 'default',
-      provider: targetProvider,
+      mode: aiMode,
+      provider: activeProvider,
       model: aiModel,
       apiKey: apiKeyInput,
-      endpoint: targetEndpoint,
+      endpoint: aiMode === 'local' ? 'http://localhost:11434/v1/chat/completions' : customEndpoint,
       temperature,
       tone: aiTone,
       behavioralFramework,
@@ -175,26 +186,24 @@ export const SettingsView: React.FC = () => {
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div>
         <h2>Settings & AI Personalization</h2>
-        <p className="subtitle">Configure Ollama local AI, master password security, cloud LLM credentials, and database operations.</p>
+        <p className="subtitle">Streamlined Local vs. Cloud AI engine setup, master security, and profile preferences.</p>
       </div>
 
-      {/* AI Provider Credentials Box */}
+      {/* Streamlined AI Model Integration (Local vs Cloud) */}
       <div className="glass-card">
-        <h3><Sparkles size={16} /> AI Engine & API Configuration</h3>
-        <p className="subtitle">Choose between running open-source local LLMs via Ollama or connecting cloud AI models.</p>
-
-        {/* 2-Option Toggle: Local Model vs Cloud Model */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', marginBottom: '1rem' }}>
+        <h3><Sparkles size={16} /> Streamlined AI Configuration (Local vs. Cloud)</h3>
+        
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', marginBottom: '1rem' }}>
           <button
             type="button"
             className={`btn ${aiMode === 'local' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => {
               setAiMode('local');
               setAiProvider('ollama');
-              setAiModel('llama3.1');
+              setCustomEndpoint('http://localhost:11434/v1/chat/completions');
             }}
           >
-            💻 Local Model (Ollama)
+            🏠 Local Model (Ollama)
           </button>
           <button
             type="button"
@@ -208,31 +217,63 @@ export const SettingsView: React.FC = () => {
         {aiMode === 'local' ? (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Local Model Selector</label>
+              <label className="form-label">Select Installed Local Ollama Model</label>
               <select
                 className="form-select"
                 value={aiModel}
                 onChange={(e) => setAiModel(e.target.value)}
               >
-                <option value="llama3.1">Meta Llama 3.1 (Default)</option>
-                <option value="qwen2.5:3b">Qwen 2.5 (3B Instruct)</option>
-                <option value="gemma2:2b">Google Gemma 2 (2B)</option>
-                <option value="mistral">Mistral 7B</option>
+                {localModelsList.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Local Service Endpoint</label>
+              <label className="form-label">Local Server Endpoint</label>
               <input
                 type="text"
                 className="form-input"
-                disabled
                 value="http://localhost:11434/v1/chat/completions"
+                disabled
               />
             </div>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">Cloud AI Provider</label>
+              <select
+                className="form-select"
+                value={aiProvider}
+                onChange={(e) => {
+                  const prov = e.target.value as any;
+                  setAiProvider(prov);
+                  if (prov === 'nvidia') {
+                    setCustomEndpoint('https://integrate.api.nvidia.com/v1/chat/completions');
+                    setAiModel('meta/llama-3.1-70b-instruct');
+                  } else if (prov === 'openai') {
+                    setCustomEndpoint('https://api.openai.com/v1/chat/completions');
+                    setAiModel('gpt-4o-mini');
+                  } else if (prov === 'anthropic') {
+                    setAiModel('claude-3-5-sonnet-20241022');
+                  } else if (prov === 'gemini') {
+                    setAiModel('gemini-1.5-flash');
+                  } else if (prov === 'openrouter') {
+                    setCustomEndpoint('https://openrouter.ai/api/v1/chat/completions');
+                    setAiModel('meta-llama/llama-3.1-70b-instruct');
+                  }
+                }}
+              >
+                <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+                <option value="anthropic">Anthropic Claude (Claude 3.5 Sonnet)</option>
+                <option value="gemini">Google Gemini (Gemini 1.5 Flash)</option>
+                <option value="nvidia">NVIDIA NIM (Open-Source Llama 3.1 70B)</option>
+                <option value="openrouter">OpenRouter (Cloud Open-Source Models)</option>
+                <option value="custom">Custom OpenAI-Compatible Provider</option>
+              </select>
+            </div>
+
             <div className="form-group">
               <label className="form-label">API Key {apiKeyInput && <span className="subtitle">({maskApiKey(apiKeyInput)})</span>}</label>
               <input
@@ -240,17 +281,28 @@ export const SettingsView: React.FC = () => {
                 className="form-input"
                 value={apiKeyInput}
                 onChange={(e) => handleApiKeyChange(e.target.value)}
-                placeholder="Paste sk-..., nvapi-..., AIza..., or sk-or-... key"
+                placeholder="Paste API key (sk-..., nvapi-..., AIza...)"
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Auto-Detected Provider & Model</label>
+              <label className="form-label">Model Identifier</label>
               <input
                 type="text"
                 className="form-input"
-                value={`${aiProvider.toUpperCase()} (${aiModel})`}
-                disabled
+                value={aiModel}
+                onChange={(e) => setAiModel(e.target.value)}
+                placeholder="e.g. gpt-4o-mini, claude-3-5-sonnet..."
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">API Endpoint URL</label>
+              <input
+                type="text"
+                className="form-input"
+                value={customEndpoint}
+                onChange={(e) => setCustomEndpoint(e.target.value)}
               />
             </div>
           </div>
@@ -258,19 +310,19 @@ export const SettingsView: React.FC = () => {
 
         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', alignItems: 'center' }}>
           <button type="button" className="btn btn-secondary" onClick={handleTestAIConnection}>
-            Test Connection & Authenticate
+            Test AI Connection
           </button>
           {testResult && (
-            <span style={{ fontSize: '0.8rem', color: testResult.success ? 'var(--success)' : 'var(--danger)' }}>
+            <span style={{ fontSize: '0.8rem', color: testResult.success ? 'var(--text-primary)' : 'var(--danger)' }}>
               {testResult.message}
             </span>
           )}
         </div>
       </div>
 
-      {/* Password Security & Preferences */}
+      {/* Password Security & Profile Preferences */}
       <div className="glass-card">
-        <h3><KeyRound size={16} /> Profile & Master App Password Security</h3>
+        <h3><KeyRound size={16} /> User Profile & Master Password Security</h3>
         <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
@@ -278,37 +330,35 @@ export const SettingsView: React.FC = () => {
               <input type="text" className="form-input" value={userName} onChange={(e) => setUserName(e.target.value)} />
             </div>
 
-            {settings?.appPassword ? (
-              <div className="form-group">
-                <label className="form-label">Current Security Password * (Required for password update)</label>
-                <input
-                  type="password"
-                  className="form-input"
-                  placeholder="Enter current password to authorize changes..."
-                  value={currentPasswordInput}
-                  onChange={(e) => setCurrentPasswordInput(e.target.value)}
-                />
-              </div>
-            ) : null}
-
             <div className="form-group">
-              <label className="form-label">{settings?.appPassword ? 'New Security Password' : 'Set Master Security Password'}</label>
+              <label className="form-label">New Master Security Password</label>
               <input
                 type="password"
                 className="form-input"
-                placeholder="Enter password..."
+                placeholder="Enter new master password..."
                 value={appPasswordInput}
                 onChange={(e) => setAppPasswordInput(e.target.value)}
               />
             </div>
           </div>
 
-          {passwordSaveError && (
-            <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{passwordSaveError}</span>
+          {settings?.appPassword && appPasswordInput !== settings.appPassword && (
+            <div className="form-group" style={{ maxWidth: '400px' }}>
+              <label className="form-label" style={{ color: 'var(--danger)' }}>Confirm Current Password (Required to update password)</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Enter current password..."
+                value={currentPasswordInput}
+                onChange={(e) => setCurrentPasswordInput(e.target.value)}
+              />
+            </div>
           )}
 
+          {passwordUpdateError && <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{passwordUpdateError}</span>}
+
           <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-            Save User Credentials & Settings
+            Save User Profile & Settings
           </button>
         </form>
       </div>

@@ -17,8 +17,8 @@ export const TasksView: React.FC = () => {
     });
   };
 
-  const handleEditTask = (task: Task) => {
-    setTaskToEdit(task);
+  const handleEditTask = (t: Task) => {
+    setTaskToEdit(t);
     setIsAddTaskModalOpen(true);
   };
 
@@ -31,7 +31,7 @@ export const TasksView: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2>Tasks & Workload Management</h2>
-          <p className="subtitle">Track active work, start/end scheduling windows, daily time allocation limits, and completion time durations.</p>
+          <p className="subtitle">Track tasks, custom frequency targets, priority levels, and edit details post-creation.</p>
         </div>
         <button
           className="btn btn-primary"
@@ -40,14 +40,14 @@ export const TasksView: React.FC = () => {
             setIsAddTaskModalOpen(true);
           }}
         >
-          <Plus size={14} /> Add Task Specification
+          <Plus size={14} /> Create Task
         </button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {tasks.length === 0 ? (
           <div className="glass-card" style={{ textAlign: 'center', padding: '2.5rem' }}>
-            <p className="subtitle">No tasks created yet. Click Add Task Specification above to add work items.</p>
+            <p className="subtitle">No tasks created yet. Click Create Task above to add work items.</p>
           </div>
         ) : (
           tasks.map((t) => (
@@ -65,11 +65,7 @@ export const TasksView: React.FC = () => {
                   </span>
                   {t.description && <div className="subtitle" style={{ fontSize: '0.725rem' }}>{t.description}</div>}
                   <div className="subtitle" style={{ fontSize: '0.7rem', marginTop: '0.15rem' }}>
-                    Schedule: {t.startDate} {t.startTime || ''} → {t.endDate || t.dueDate} {t.endTime || ''}
-                    {t.dailyTimeLimitMinutes && <span> | Daily Limit: {t.dailyTimeLimitMinutes / 60}h</span>}
-                    {t.completionTimeMinutes && (
-                      <span> | Duration: {Math.floor(t.completionTimeMinutes / 60)}h {t.completionTimeMinutes % 60}m</span>
-                    )}
+                    Start Date: {t.startDate || 'Today'} | Frequency: {t.frequency || 'Daily'}
                   </div>
                 </div>
               </div>

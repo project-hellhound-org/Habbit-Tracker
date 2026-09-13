@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, Task } from '../db/schema';
-import { X, Plus, Save, Calendar, Clock } from 'lucide-react';
+import { X, Plus, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface AddTaskModalProps {
@@ -15,68 +15,62 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
-
-  // Start & End Date/Time Selection Column
+  const [frequency, setFrequency] = useState<'once_a_week' | 'daily' | 'custom'>('daily');
+  const [customDays, setCustomDays] = useState<number[]>([1, 2, 3, 4, 5]); // 0=Sun..6=Sat
   const [startDate, setStartDate] = useState(todayStr);
-  const [startTime, setStartTime] = useState('09:00');
-  const [endDate, setEndDate] = useState(todayStr);
-  const [endTime, setEndTime] = useState('17:00');
 
-  // Daily Time Allocation Limit Field
-  const [dailyTimeLimitHours, setDailyTimeLimitHours] = useState<number>(2);
-
-  // Dedicated Completion Time (Duration) Field
-  const [completionHours, setCompletionHours] = useState<number>(2);
-  const [completionMinutes, setCompletionMinutes] = useState<number>(30);
+  const daysOfWeek = [
+    { label: 'Mon', value: 1 },
+    { label: 'Tue', value: 2 },
+    { label: 'Wed', value: 3 },
+    { label: 'Thu', value: 4 },
+    { label: 'Fri', value: 5 },
+    { label: 'Sat', value: 6 },
+    { label: 'Sun', value: 0 },
+  ];
 
   useEffect(() => {
     if (taskToEdit) {
       setTitle(taskToEdit.title || '');
       setDescription(taskToEdit.description || '');
       setPriority(taskToEdit.priority || 'medium');
+      setFrequency(taskToEdit.frequency || 'daily');
+      setCustomDays(taskToEdit.customDays || [1, 2, 3, 4, 5]);
       setStartDate(taskToEdit.startDate || todayStr);
-      setStartTime(taskToEdit.startTime || '09:00');
-      setEndDate(taskToEdit.endDate || taskToEdit.dueDate || todayStr);
-      setEndTime(taskToEdit.endTime || taskToEdit.dueTime || '17:00');
-      setDailyTimeLimitHours(taskToEdit.dailyTimeLimitMinutes ? taskToEdit.dailyTimeLimitMinutes / 60 : 2);
-      const durationMins = taskToEdit.completionTimeMinutes || 150;
-      setCompletionHours(Math.floor(durationMins / 60));
-      setCompletionMinutes(durationMins % 60);
     } else {
       setTitle('');
       setDescription('');
       setPriority('medium');
+      setFrequency('daily');
+      setCustomDays([1, 2, 3, 4, 5]);
       setStartDate(todayStr);
-      setStartTime('09:00');
-      setEndDate(todayStr);
-      setEndTime('17:00');
-      setDailyTimeLimitHours(2);
-      setCompletionHours(2);
-      setCompletionMinutes(30);
     }
   }, [taskToEdit, isOpen]);
 
   if (!isOpen) return null;
 
+  const toggleDay = (dayVal: number) => {
+    if (customDays.includes(dayVal)) {
+      if (customDays.length > 1) {
+        setCustomDays(customDays.filter((d) => d !== dayVal));
+      }
+    } else {
+      setCustomDays([...customDays, dayVal].sort());
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-
-    const totalDurationMinutes = (Number(completionHours) || 0) * 60 + (Number(completionMinutes) || 0);
 
     if (taskToEdit) {
       await db.tasks.update(taskToEdit.id, {
         title: title.trim(),
         description: description.trim(),
         priority,
+        frequency,
+        customDays: frequency === 'custom' ? customDays : undefined,
         startDate,
-        startTime,
-        endDate,
-        endTime,
-        dueDate: endDate,
-        dueTime: endTime,
-        dailyTimeLimitMinutes: Number(dailyTimeLimitHours) * 60,
-        completionTimeMinutes: totalDurationMinutes,
         updatedAt: new Date().toISOString(),
       });
     } else {
@@ -86,14 +80,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
         description: description.trim(),
         status: 'planned',
         priority,
+        frequency,
+        customDays: frequency === 'custom' ? customDays : undefined,
         startDate,
-        startTime,
-        endDate,
-        endTime,
-        dueDate: endDate,
-        dueTime: endTime,
-        dailyTimeLimitMinutes: Number(dailyTimeLimitHours) * 60,
-        completionTimeMinutes: totalDurationMinutes,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -104,24 +93,24 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div className="glass-card" style={{ width: '100%', maxWidth: '580px', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-secondary)' }}>
+      <div className="glass-card" style={{ width: '100%', maxWidth: '520px', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-secondary)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem' }}>
-            <Calendar size={18} /> {taskToEdit ? 'Edit Task Specification' : 'Add Task Specification'}
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+            <Calendar size={18} /> {taskToEdit ? 'Edit Task' : 'Create New Task'}
           </h3>
           <button className="btn btn-secondary btn-icon btn-xs" onClick={onClose}>
             <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           <div className="form-group">
             <label className="form-label">Task Title *</label>
             <input
               type="text"
               className="form-input"
               required
-              placeholder="e.g. Architecture Security Review, System Optimization..."
+              placeholder="e.g. System Architecture Security Review, Refactor Components..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -138,110 +127,86 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Priority Level</label>
-            <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value as any)}>
-              <option value="low">Low Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="high">High Priority</option>
-              <option value="critical">Critical Priority</option>
-            </select>
-          </div>
-
-          {/* Start and End Date/Time Selection Column */}
-          <div style={{ padding: '0.85rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Clock size={14} /> Start & End Schedule Window Column
-            </span>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div className="form-group">
-                <label className="form-label">Start Date *</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  required
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Start Time</label>
-                <input
-                  type="time"
-                  className="form-input"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="form-group">
+              <label className="form-label">Priority Level</label>
+              <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value as any)}>
+                <option value="low">Low Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="high">High Priority</option>
+                <option value="critical">Critical Priority</option>
+              </select>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div className="form-group">
-                <label className="form-label">End Date *</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  required
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">End Time</label>
-                <input
-                  type="time"
-                  className="form-input"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Start Date *</label>
+              <input
+                type="date"
+                className="form-input"
+                required
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
             </div>
           </div>
 
-          {/* Daily Time Allocation Limit */}
+          {/* Frequency Selector: Once a week, Daily, or Custom Mon-Sun */}
           <div className="form-group">
-            <label className="form-label">Daily Time Allocation Limit (Hours per Day)</label>
-            <input
-              type="number"
-              min={0.5}
-              max={24}
-              step={0.5}
-              className="form-input"
-              value={dailyTimeLimitHours}
-              onChange={(e) => setDailyTimeLimitHours(Number(e.target.value))}
-            />
-          </div>
-
-          {/* Dedicated Completion Time (Duration) */}
-          <div className="form-group">
-            <label className="form-label">Completion Time (Duration)</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div>
-                <span className="subtitle" style={{ fontSize: '0.75rem' }}>Hours</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={24}
-                  className="form-input"
-                  value={completionHours}
-                  onChange={(e) => setCompletionHours(Number(e.target.value))}
-                />
-              </div>
-
-              <div>
-                <span className="subtitle" style={{ fontSize: '0.75rem' }}>Minutes</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={59}
-                  className="form-input"
-                  value={completionMinutes}
-                  onChange={(e) => setCompletionMinutes(Number(e.target.value))}
-                />
-              </div>
+            <label className="form-label">Frequency</label>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <button
+                type="button"
+                className={`btn ${frequency === 'daily' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ flex: 1 }}
+                onClick={() => setFrequency('daily')}
+              >
+                Daily
+              </button>
+              <button
+                type="button"
+                className={`btn ${frequency === 'once_a_week' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ flex: 1 }}
+                onClick={() => setFrequency('once_a_week')}
+              >
+                Once a Week
+              </button>
+              <button
+                type="button"
+                className={`btn ${frequency === 'custom' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ flex: 1 }}
+                onClick={() => setFrequency('custom')}
+              >
+                Custom Days
+              </button>
             </div>
+
+            {frequency === 'custom' && (
+              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                {daysOfWeek.map((d) => {
+                  const selected = customDays.includes(d.value);
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => toggleDay(d.value)}
+                      style={{
+                        flex: 1,
+                        padding: '0.4rem 0',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border-color)',
+                        background: selected ? 'var(--button-primary-bg)' : 'var(--bg-primary)',
+                        color: selected ? '#ffffff' : 'var(--text-secondary)',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
@@ -249,7 +214,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              {taskToEdit ? <Save size={14} /> : <Plus size={14} />} {taskToEdit ? 'Save Task Changes' : 'Add Task'}
+              <Plus size={14} /> {taskToEdit ? 'Save Task Changes' : 'Add Task'}
             </button>
           </div>
         </form>

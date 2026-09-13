@@ -3,10 +3,12 @@ import Dexie, { Table } from 'dexie';
 export interface Habit {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   category: 'Fitness & Health' | 'Learning & Growth' | 'Work & Projects' | string;
   icon?: string;
   frequency?: 'daily' | 'weekly' | 'custom_days';
+  frequencyMode?: 'everyday' | 'custom';
+  selectedDays?: number[]; // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
   frequencyType?: string;
   frequencyConfig?: any;
   targetDaysPerWeek?: number;
@@ -16,12 +18,13 @@ export interface Habit {
   timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'anytime';
   startTime?: string; // e.g. "08:00"
   endTime?: string;   // e.g. "09:00"
+  amPm?: 'AM' | 'PM';
   color: string;
   difficulty?: string;
   priority?: string;
   notes?: string;
   startDate?: string;
-  endDate?: string;   // Defined completion timeline
+  endDate?: string;   // Defined completion timeline (deprecated/optional)
   archived: number | boolean;
   createdAt: string;
   updatedAt?: string;
@@ -43,14 +46,16 @@ export interface Task {
   description?: string;
   status: 'planned' | 'completed' | 'remaining' | 'overdue' | 'cancelled' | 'deferred' | 'todo' | 'in_progress' | 'backlog';
   priority: 'low' | 'medium' | 'high' | 'critical';
+  frequency?: 'once_a_week' | 'daily' | 'custom';
+  customDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
   startDate?: string;
   startTime?: string;
   endDate?: string;
   endTime?: string;
   dueDate?: string;
   dueTime?: string | null;
-  dailyTimeLimitMinutes?: number; // Daily time allocation limit
-  completionTimeMinutes?: number; // Completion Time (Duration in minutes)
+  dailyTimeLimitMinutes?: number;
+  completionTimeMinutes?: number;
   projectId?: string | null;
   goalId?: string | null;
   tags?: string[];
@@ -148,6 +153,7 @@ export interface DailyReview {
   productivityScore?: number;
   habitCompletionPct?: number;
   taskCompletionPct?: number;
+  unifiedReviewNotes?: string;
   accomplished?: string;
   missed?: string;
   whyMissed?: string;
@@ -224,7 +230,8 @@ export interface AIMessage {
 
 export interface AISettings {
   id: string;
-  provider: 'builtin' | 'ollama' | 'openai' | 'nvidia' | 'anthropic' | 'gemini' | 'custom';
+  mode: 'local' | 'cloud';
+  provider: 'ollama' | 'openai' | 'nvidia' | 'anthropic' | 'gemini' | 'openrouter' | 'custom' | 'builtin';
   model: string;
   apiKey?: string;
   endpoint?: string;

@@ -10,6 +10,7 @@ import { AnalyticsView } from './views/AnalyticsView';
 import { CalendarView } from './views/CalendarView';
 import { InsightsView } from './views/InsightsView';
 import { SettingsView } from './views/SettingsView';
+import { Leaf } from 'lucide-react';
 
 export type ActiveTab =
   | 'dashboard'
@@ -24,23 +25,51 @@ export type ActiveTab =
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     initializeDatabase().then(() => {
       setIsInitialized(true);
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 700);
+      return () => clearTimeout(timer);
     });
   }, []);
 
-  if (!isInitialized) {
+  if (!isInitialized || showSplash) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0B0C10', color: '#F5F5F2', gap: '1rem' }}>
-        <img
-          src="public/icon.png"
-          alt="Habit OS Logo"
-          style={{ width: '72px', height: '72px', borderRadius: '16px', boxShadow: '0 0 30px rgba(6, 182, 212, 0.4)', animation: 'editPulse 1.5s infinite alternate ease-in-out' }}
-        />
-        <h2 style={{ fontSize: '1.2rem', letterSpacing: '-0.02em', fontFamily: 'var(--font-heading)' }}>Habit OS</h2>
-        <span className="subtitle" style={{ fontSize: '0.8rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Initializing Local-First Workstation...</span>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          background: '#102A20',
+          color: '#F3F1E7',
+        }}
+      >
+        <div className="splash-reveal" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '16px',
+              background: '#315D43',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            }}
+          >
+            <Leaf size={36} style={{ color: '#C5D6B9' }} />
+          </div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em' }}>🌿 Forest Flow</h1>
+          <p className="subtitle" style={{ color: '#8FAF82', fontSize: '0.875rem' }}>
+            Initializing local workspace & engine...
+          </p>
+        </div>
       </div>
     );
   }
@@ -66,3 +95,4 @@ export const App: React.FC = () => {
 };
 
 export default App;
+

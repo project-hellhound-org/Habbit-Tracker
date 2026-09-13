@@ -13,43 +13,57 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
   const todayStr = format(new Date(), 'yyyy-MM-dd');
 
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'Fitness & Health' | 'Learning & Growth' | 'Work & Projects'>('Fitness & Health');
-  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'custom_days'>('daily');
+  const [frequencyMode, setFrequencyMode] = useState<'everyday' | 'custom'>('everyday');
+  const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]); // 0=Sun..6=Sat
   const [startDate, setStartDate] = useState(todayStr);
-  const [endDate, setEndDate] = useState('');
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('09:00');
+  const [scheduledTime, setScheduledTime] = useState('08:00');
+  const [amPm, setAmPm] = useState<'AM' | 'PM'>('AM');
   const [difficulty, setDifficulty] = useState('medium');
 
-  // Mini Calendar Inspection State
-  const [previewMonth, setPreviewMonth] = useState(new Date());
+  const daysOfWeek = [
+    { label: 'Mon', value: 1 },
+    { label: 'Tue', value: 2 },
+    { label: 'Wed', value: 3 },
+    { label: 'Thu', value: 4 },
+    { label: 'Fri', value: 5 },
+    { label: 'Sat', value: 6 },
+    { label: 'Sun', value: 0 },
+  ];
 
   useEffect(() => {
     if (habitToEdit) {
       setName(habitToEdit.name || '');
-      setDescription(habitToEdit.description || '');
       setCategory((habitToEdit.category as any) || 'Fitness & Health');
-      setFrequency(habitToEdit.frequency || 'daily');
+      setFrequencyMode(habitToEdit.frequencyMode || 'everyday');
+      setSelectedDays(habitToEdit.selectedDays || [0, 1, 2, 3, 4, 5, 6]);
       setStartDate(habitToEdit.startDate || todayStr);
-      setEndDate(habitToEdit.endDate || '');
-      setStartTime(habitToEdit.startTime || '08:00');
-      setEndTime(habitToEdit.endTime || '09:00');
+      setScheduledTime(habitToEdit.startTime || '08:00');
+      setAmPm(habitToEdit.amPm || 'AM');
       setDifficulty(habitToEdit.difficulty || 'medium');
     } else {
       setName('');
-      setDescription('');
       setCategory('Fitness & Health');
-      setFrequency('daily');
+      setFrequencyMode('everyday');
+      setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
       setStartDate(todayStr);
-      setEndDate('');
-      setStartTime('08:00');
-      setEndTime('09:00');
+      setScheduledTime('08:00');
+      setAmPm('AM');
       setDifficulty('medium');
     }
   }, [habitToEdit, isOpen]);
 
   if (!isOpen) return null;
+
+  const toggleDay = (dayVal: number) => {
+    if (selectedDays.includes(dayVal)) {
+      if (selectedDays.length > 1) {
+        setSelectedDays(selectedDays.filter((d) => d !== dayVal));
+      }
+    } else {
+      setSelectedDays([...selectedDays, dayVal].sort());
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +72,12 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
     if (habitToEdit) {
       await db.habits.update(habitToEdit.id, {
         name: name.trim(),
-        description: description.trim(),
         category,
-        frequency,
+        frequencyMode,
+        selectedDays: frequencyMode === 'everyday' ? [0, 1, 2, 3, 4, 5, 6] : selectedDays,
         startDate,
-        endDate: endDate || undefined,
-        startTime,
-        endTime,
+        startTime: scheduledTime,
+        amPm,
         difficulty,
         updatedAt: new Date().toISOString(),
       });
@@ -72,15 +85,13 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
       await db.habits.add({
         id: `habit-${Date.now()}`,
         name: name.trim(),
-        description: description.trim(),
         category,
-        frequency,
-        targetDaysPerWeek: 7,
+        frequencyMode,
+        selectedDays: frequencyMode === 'everyday' ? [0, 1, 2, 3, 4, 5, 6] : selectedDays,
         startDate,
-        endDate: endDate || undefined,
-        startTime,
-        endTime,
-        color: '#ffffff',
+        startTime: scheduledTime,
+        amPm,
+        color: '#31563D',
         difficulty,
         archived: 0,
         createdAt: new Date().toISOString(),
@@ -90,110 +101,148 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
     onClose();
   };
 
-  // Embedded Calendar View Days calculation
-  const mStart = startOfMonth(previewMonth);
-  const mEnd = endOfMonth(previewMonth);
-  const previewDays = eachDayOfInterval({ start: mStart, end: mEnd });
-
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div className="glass-card" style={{ width: '100%', maxWidth: '680px', display: 'grid', gridTemplateColumns: '1fr 240px', gap: '1.25rem', background: 'var(--bg-secondary)' }}>
-        {/* Main Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.65rem' }}>
-            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}>
-              <Sparkles size={16} /> {habitToEdit ? 'Edit Habit Specification' : 'Add Habit Specification'}
-            </h3>
-          </div>
+      <div className="glass-card" style={{ width: '100%', maxWidth: '540px', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.65rem' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+            <Sparkles size={16} /> {habitToEdit ? 'Edit Habit' : 'Create New Habit'}
+          </h3>
+          <button className="btn btn-secondary btn-icon btn-xs" onClick={onClose}>
+            <X size={16} />
+          </button>
+        </div>
 
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           <div className="form-group">
             <label className="form-label">Habit Name *</label>
             <input
               type="text"
               className="form-input"
               required
-              placeholder="e.g. Daily Strength Training, Deep Reading..."
+              placeholder="e.g. Morning Strength Training, Daily Reading..."
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Description / Core Purpose</label>
-            <textarea
-              className="form-textarea"
-              rows={2}
-              placeholder="Habit rationale and execution guidelines..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+            <label className="form-label">Category *</label>
+            <select className="form-select" value={category} onChange={(e) => setCategory(e.target.value as any)}>
+              <option value="Fitness & Health">Fitness & Health</option>
+              <option value="Learning & Growth">Learning & Growth</option>
+              <option value="Work & Projects">Work & Projects</option>
+            </select>
+          </div>
+
+          {/* Consolidated Date Field */}
+          <div className="form-group">
+            <label className="form-label">Start Date *</label>
+            <input
+              type="date"
+              className="form-input"
+              required
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div className="form-group">
-              <label className="form-label">Category *</label>
-              <select className="form-select" value={category} onChange={(e) => setCategory(e.target.value as any)}>
-                <option value="Fitness & Health">Fitness & Health</option>
-                <option value="Learning & Growth">Learning & Growth</option>
-                <option value="Work & Projects">Work & Projects</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Frequency</label>
-              <select className="form-select" value={frequency} onChange={(e) => setFrequency(e.target.value as any)}>
-                <option value="daily">Everyday (Daily)</option>
-                <option value="weekly">Weekly Target</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Flexible Scheduling Option: Specific Start and End Times */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div className="form-group">
-              <label className="form-label">Scheduled Start Time</label>
+          {/* Time Selector with AM/PM toggle */}
+          <div className="form-group">
+            <label className="form-label">Scheduled Time & AM/PM</label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <input
                 type="time"
                 className="form-input"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                style={{ flex: 1 }}
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
               />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Scheduled End Time</label>
-              <input
-                type="time"
-                className="form-input"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-              />
+              <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '0.45rem 0.85rem',
+                    background: amPm === 'AM' ? 'var(--button-primary-bg)' : 'var(--bg-primary)',
+                    color: amPm === 'AM' ? '#fff' : 'var(--text-secondary)',
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setAmPm('AM')}
+                >
+                  AM
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: '0.45rem 0.85rem',
+                    background: amPm === 'PM' ? 'var(--button-primary-bg)' : 'var(--bg-primary)',
+                    color: amPm === 'PM' ? '#fff' : 'var(--text-secondary)',
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setAmPm('PM')}
+                >
+                  PM
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Start Date & End Date (Defined Completion Timeline) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div className="form-group">
-              <label className="form-label">Start Date *</label>
-              <input
-                type="date"
-                className="form-input"
-                required
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+          {/* Frequency Setting: Everyday or Custom Mon-Sun */}
+          <div className="form-group">
+            <label className="form-label">Frequency</label>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <button
+                type="button"
+                className={`btn ${frequencyMode === 'everyday' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setFrequencyMode('everyday');
+                  setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+                }}
+              >
+                Everyday
+              </button>
+              <button
+                type="button"
+                className={`btn ${frequencyMode === 'custom' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ flex: 1 }}
+                onClick={() => setFrequencyMode('custom')}
+              >
+                Custom Days
+              </button>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">End Date</label>
-              <input
-                type="date"
-                className="form-input"
-                placeholder="Optional completion end date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
+            {frequencyMode === 'custom' && (
+              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                {daysOfWeek.map((d) => {
+                  const selected = selectedDays.includes(d.value);
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => toggleDay(d.value)}
+                      style={{
+                        flex: 1,
+                        padding: '0.4rem 0',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border-color)',
+                        background: selected ? 'var(--button-primary-bg)' : 'var(--bg-primary)',
+                        color: selected ? '#ffffff' : 'var(--text-secondary)',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
@@ -205,52 +254,6 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
             </button>
           </div>
         </form>
-
-        {/* Embedded Mini Calendar Preview Panel */}
-        <div style={{ background: 'var(--bg-primary)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h4 style={{ fontSize: '0.8rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <CalendarIcon size={14} /> Timeline View
-            </h4>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>{format(previewMonth, 'MMM yyyy')}</span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-            <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-            {previewDays.map((d) => {
-              const dStr = format(d, 'yyyy-MM-dd');
-              const isStart = dStr === startDate;
-              const isEnd = dStr === endDate;
-              const inRange = endDate && dStr >= startDate && dStr <= endDate;
-
-              return (
-                <div
-                  key={dStr}
-                  style={{
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.675rem',
-                    borderRadius: '2px',
-                    background: isStart || isEnd ? 'var(--accent-primary)' : inRange ? 'var(--bg-elevated)' : 'transparent',
-                    color: isStart || isEnd ? 'var(--bg-primary)' : 'var(--text-secondary)',
-                    fontWeight: isStart || isEnd ? 700 : 400,
-                  }}
-                >
-                  {format(d, 'd')}
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem' }}>
-            {endDate ? `Active range: ${startDate} to ${endDate}` : `Ongoing starting ${startDate}`}
-          </div>
-        </div>
       </div>
     </div>
   );

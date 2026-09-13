@@ -3,7 +3,8 @@ import { getAIContext, generateBuiltinAnalyticalResponse } from '../engine/aiCon
 
 export const DEFAULT_AI_SETTINGS: AISettings = {
   id: 'default',
-  provider: 'builtin',
+  mode: 'local',
+  provider: 'ollama',
   model: 'llama3.1',
   apiKey: '',
   endpoint: 'http://localhost:11434/v1/chat/completions',

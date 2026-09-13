@@ -17,9 +17,9 @@ export const JournalView: React.FC = () => {
   const goals = useLiveQuery(() => db.goals.toArray()) || [];
 
   const [rating, setRating] = useState<number>(existingReview?.rating || 5);
-  const [accomplished, setAccomplished] = useState<string>(existingReview?.accomplished || '');
-  const [missed, setMissed] = useState<string>(existingReview?.missed || '');
-  const [carryForward, setCarryForward] = useState<string>(existingReview?.carryForwardNotes || '');
+  const [unifiedReviewNotes, setUnifiedReviewNotes] = useState<string>(
+    existingReview?.unifiedReviewNotes || existingReview?.accomplished || ''
+  );
 
   // Calculate Real-Time Dynamic Snapshot Metrics
   const completedHabitsCount = todayHabitLogs.filter((l) => l.status === 'completed').length;
@@ -90,9 +90,7 @@ export const JournalView: React.FC = () => {
       id: todayStr,
       date: todayStr,
       rating,
-      accomplished,
-      missed,
-      carryForwardNotes: carryForward,
+      unifiedReviewNotes,
       snapshotData: dynamicSnapshot,
       createdAt: new Date().toISOString(),
       completedAt: new Date().toISOString(),
@@ -212,35 +210,13 @@ export const JournalView: React.FC = () => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Key Accomplishments & Completed Milestones</label>
+          <label className="form-label">Unified Daily Review & Reflections</label>
           <textarea
             className="form-textarea"
-            rows={3}
-            value={accomplished}
-            onChange={(e) => setAccomplished(e.target.value)}
-            placeholder="What went well today?"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Blockers, Friction & Missed Targets</label>
-          <textarea
-            className="form-textarea"
-            rows={3}
-            value={missed}
-            onChange={(e) => setMissed(e.target.value)}
-            placeholder="What delayed execution or caused friction?"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Carry-Forward Actions for Tomorrow</label>
-          <textarea
-            className="form-textarea"
-            rows={2}
-            value={carryForward}
-            onChange={(e) => setCarryForward(e.target.value)}
-            placeholder="Key priorities to tackle first tomorrow..."
+            rows={5}
+            value={unifiedReviewNotes}
+            onChange={(e) => setUnifiedReviewNotes(e.target.value)}
+            placeholder="Record your daily reflection, accomplishments, blockers, and carry-forward actions for tomorrow..."
           />
         </div>
 

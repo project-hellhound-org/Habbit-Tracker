@@ -32,16 +32,43 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
 
   const [isFreezeModalOpen, setIsFreezeModalOpen] = useState(false);
 
+  const currentHour = new Date().getHours();
+  let greeting = 'Good Morning';
+  if (currentHour >= 12 && currentHour < 17) {
+    greeting = 'Good Afternoon';
+  } else if (currentHour >= 17) {
+    greeting = 'Good Evening';
+  }
+
+  const userName = settings?.userName || 'Alpha4';
+
   return (
-    <header style={{ height: 'var(--header-height)', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+    <header
+      style={{
+        height: 'var(--header-height)',
+        background: 'var(--bg-secondary)',
+        borderBottom: '1px solid var(--border-color)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 1.5rem',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <h2 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          {greeting}, {userName}
+        </h2>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          Consistency today, a brighter tomorrow.
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.8rem', background: 'var(--bg-elevated)', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
           <Calendar size={14} />
           <span>{todayStr}</span>
         </div>
-      </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         {/* Dynamic Top Corner Flame Streak Indicator */}
         <StreakFlameIndicator
           completionPct={completionPct}
@@ -66,3 +93,4 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     </header>
   );
 };
+
