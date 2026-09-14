@@ -281,6 +281,112 @@ button, input, select, textarea {
   animation: splashScaleReveal 800ms var(--ease-standard) forwards;
 }
 
+/* Glass Surface Layers */
+.glass-level-1 {
+  background: rgba(25, 55, 42, 0.70);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(160, 190, 160, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.glass-level-2 {
+  background: rgba(25, 55, 42, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(160, 190, 160, 0.16);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.glass-level-3 {
+  background: rgba(25, 55, 42, 0.88);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(160, 190, 160, 0.24);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* Scrim Backdrop Overlay */
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 15, 10, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 990;
+  transition: opacity var(--motion-normal) var(--ease-standard);
+}
+
+/* Contextual Sidebar Drawer */
+.contextual-drawer-right {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  max-width: 90vw;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 47, 36, 0.94);
+  backdrop-filter: blur(24px);
+  border-left: 1px solid rgba(160, 190, 160, 0.18);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+  transform: translateX(100%);
+  transition: transform var(--motion-medium) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contextual-drawer-right.open {
+  transform: translateX(0);
+}
+
+/* Swipe-to-Reveal Bottom Drawer */
+.bottom-drawer {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 100%;
+  max-width: 720px;
+  background: rgba(20, 47, 36, 0.96);
+  backdrop-filter: blur(24px);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border: 1px solid rgba(160, 190, 160, 0.18);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 900;
+  transition: transform var(--motion-medium) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bottom-drawer.collapsed {
+  transform: translate(-50%, calc(100% - 36px));
+}
+
+.bottom-drawer.peek {
+  transform: translate(-50%, calc(100% - 90px));
+}
+
+.bottom-drawer.expanded {
+  transform: translate(-50%, 0);
+}
+
+/* Button Morphing Animation */
+.btn-morph {
+  transition: all var(--motion-normal) var(--ease-standard);
+}
+.btn-morph.creating {
+  background: var(--warning-bg) !important;
+  color: var(--warning) !important;
+  border-color: var(--warning) !important;
+}
+.btn-morph.created {
+  background: var(--success-bg) !important;
+  color: var(--success) !important;
+  border-color: var(--success) !important;
+}
+
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
@@ -290,4 +396,5 @@ button, input, select, textarea {
     scroll-behavior: auto !important;
   }
 }
+
 

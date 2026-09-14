@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initializeDatabase } from './db/seed';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { BottomDrawer } from './components/BottomDrawer';
 import { DashboardView } from './views/DashboardView';
 import { HabitsView } from './views/HabitsView';
 import { TasksView } from './views/TasksView';
@@ -75,9 +76,9 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}>
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingBottom: '36px' }}>
         <Header activeTab={activeTab} setActiveTab={setActiveTab} />
         <main style={{ flex: 1, overflowY: 'auto' }}>
           {activeTab === 'dashboard' && <DashboardView setActiveTab={setActiveTab} />}
@@ -90,9 +91,13 @@ export const App: React.FC = () => {
           {activeTab === 'settings' && <SettingsView />}
         </main>
       </div>
+
+      {/* Swipe-to-Reveal Bottom Drawer */}
+      <BottomDrawer setActiveTab={setActiveTab} />
     </div>
   );
 };
 
 export default App;
+
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db, Task } from '../db/schema';
-import { X, Plus, Calendar, Clock } from 'lucide-react';
+import { db, Task, Subtask } from '../db/schema';
+import { X, Plus, Calendar, CheckSquare, Trash2, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface AddTaskModalProps {
@@ -19,6 +19,11 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
   const [customDays, setCustomDays] = useState<number[]>([1, 2, 3, 4, 5]); // 0=Sun..6=Sat
   const [startDate, setStartDate] = useState(todayStr);
 
+  // Subtasks State inside Creation/Edit Panel
+  const [draftSubtasks, setDraftSubtasks] = useState<Array<{ id: string; title: string; completed: boolean }>>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [submitBtnState, setSubmitBtnState] = useState<'idle' | 'creating' | 'created'>('idle');
+
   const daysOfWeek = [
     { label: 'Mon', value: 1 },
     { label: 'Tue', value: 2 },
@@ -30,24 +35,62 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
   ];
 
   useEffect(() => {
-    if (taskToEdit) {
-      setTitle(taskToEdit.title || '');
-      setDescription(taskToEdit.description || '');
-      setPriority(taskToEdit.priority || 'medium');
-      setFrequency(taskToEdit.frequency || 'daily');
-      setCustomDays(taskToEdit.customDays || [1, 2, 3, 4, 5]);
-      setStartDate(taskToEdit.startDate || todayStr);
-    } else {
-      setTitle('');
-      setDescription('');
-      setPriority('medium');
-      setFrequency('daily');
-      setCustomDays([1, 2, 3, 4, 5]);
-      setStartDate(todayStr);
+    let isMounted = true;
+    const loadTaskData = async () => {
+      if (taskToEdit) {
+        setTitle(taskToEdit.title || '');
+        setDescription(taskToEdit.description || '');
+        setPriority(taskToEdit.priority || 'medium');
+        setFrequency(taskToEdit.frequency || 'daily');
+        setCustomDays(taskToEdit.customDays || [1, 2, 3, 4, 5]);
+        setStartDate(taskToEdit.startDate || todayStr);
+
+        // Fetch existing subtasks from IndexedDB
+        try {
+          const subs = await db.subtasks.where('taskId').equals(taskToEdit.id).toArray();
+          if (isMounted) {
+            setDraftSubtasks(subs.map((s) => ({ id: s.id, title: s.title, completed: s.completed })));
+          }
+        } catch (e) {
+          if (isMounted) setDraftSubtasks([]);
+        }
+      } else {
+        setTitle('');
+        setDescription('');
+        setPriority('medium');
+        setFrequency('daily');
+        setCustomDays([1, 2, 3, 4, 5]);
+        setStartDate(todayStr);
+        setDraftSubtasks([]);
+      }
+    };
+
+    if (isOpen) {
+      loadTaskData();
     }
+    return () => { isMounted = false; };
   }, [taskToEdit, isOpen]);
 
   if (!isOpen) return null;
+
+  const handleAddSubtask = () => {
+    if (!newSubtaskTitle.trim()) return;
+    setDraftSubtasks((prev) => [
+      ...prev,
+      { id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, title: newSubtaskTitle.trim(), completed: false },
+    ]);
+    setNewSubtaskTitle('');
+  };
+
+  const handleToggleDraftSubtask = (id: string) => {
+    setDraftSubtasks((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, completed: !s.completed } : s))
+    );
+  };
+
+  const handleRemoveDraftSubtask = (id: string) => {
+    setDraftSubtasks((prev) => prev.filter((s) => s.id !== id));
+  };
 
   const toggleDay = (dayVal: number) => {
     if (customDays.includes(dayVal)) {
@@ -63,54 +106,88 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
     e.preventDefault();
     if (!title.trim()) return;
 
+    setSubmitBtnState('creating');
+
+    // Auto completion check: If subtasks exist and all are checked, full completion state triggers!
+    const allSubtasksDone = draftSubtasks.length > 0 && draftSubtasks.every((s) => s.completed);
+    const targetStatus = allSubtasksDone ? 'completed' : taskToEdit?.status || 'planned';
+    const completedAtIso = allSubtasksDone ? new Date().toISOString() : taskToEdit?.completedAt || null;
+
+    const taskId = taskToEdit ? taskToEdit.id : `task-${Date.now()}`;
+
     if (taskToEdit) {
-      await db.tasks.update(taskToEdit.id, {
+      await db.tasks.update(taskId, {
         title: title.trim(),
         description: description.trim(),
+        status: targetStatus,
         priority,
         frequency,
         customDays: frequency === 'custom' ? customDays : undefined,
         startDate,
+        completedAt: completedAtIso,
         updatedAt: new Date().toISOString(),
       });
+
+      // Clear existing subtasks for this task & bulk save current draft subtasks
+      await db.subtasks.where('taskId').equals(taskId).delete();
     } else {
       await db.tasks.add({
-        id: `task-${Date.now()}`,
+        id: taskId,
         title: title.trim(),
         description: description.trim(),
-        status: 'planned',
+        status: targetStatus,
         priority,
         frequency,
         customDays: frequency === 'custom' ? customDays : undefined,
         startDate,
+        completedAt: completedAtIso,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
     }
 
-    onClose();
+    // Insert updated subtasks
+    if (draftSubtasks.length > 0) {
+      const subtaskEntities: Subtask[] = draftSubtasks.map((s, idx) => ({
+        id: s.id,
+        taskId,
+        title: s.title,
+        completed: s.completed,
+        order: idx,
+      }));
+      await db.subtasks.bulkAdd(subtaskEntities);
+    }
+
+    setSubmitBtnState('created');
+    setTimeout(() => {
+      setSubmitBtnState('idle');
+      onClose();
+    }, 400);
   };
 
+  const completedSubtasksCount = draftSubtasks.filter((s) => s.completed).length;
+  const isAllDraftSubtasksCompleted = draftSubtasks.length > 0 && completedSubtasksCount === draftSubtasks.length;
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div className="glass-card" style={{ width: '100%', maxWidth: '520px', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-secondary)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
-            <Calendar size={18} /> {taskToEdit ? 'Edit Task' : 'Create New Task'}
+    <div className="drawer-scrim" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
+      <div className="glass-level-3" style={{ width: '100%', maxWidth: '540px', display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(160, 190, 160, 0.2)', paddingBottom: '0.75rem' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>
+            <Calendar size={18} style={{ color: '#8FAF82' }} /> {taskToEdit ? 'Edit Task Specification' : 'Create New Task'}
           </h3>
           <button className="btn btn-secondary btn-icon btn-xs" onClick={onClose}>
             <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="form-group">
             <label className="form-label">Task Title *</label>
             <input
               type="text"
               className="form-input"
               required
-              placeholder="e.g. System Architecture Security Review, Refactor Components..."
+              placeholder="e.g. System Architecture Security Review..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -125,6 +202,74 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Subtask Management Feature Section */}
+          <div className="form-group" style={{ background: 'rgba(16, 42, 32, 0.6)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(160, 190, 160, 0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', margin: 0 }}>
+                <CheckSquare size={14} style={{ color: '#8FAF82' }} /> Subtasks Checklist ({completedSubtasksCount}/{draftSubtasks.length})
+              </label>
+              {isAllDraftSubtasksCompleted && (
+                <span style={{ fontSize: '0.725rem', color: '#527653', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                  <CheckCircle2 size={13} /> Full Completion Satisfied
+                </span>
+              )}
+            </div>
+
+            {/* Subtask Progress Bar */}
+            {draftSubtasks.length > 0 && (
+              <div className="progress-bar-track" style={{ height: '6px', marginBottom: '0.65rem' }}>
+                <div
+                  className="progress-bar-fill"
+                  style={{
+                    width: `${Math.round((completedSubtasksCount / draftSubtasks.length) * 100)}%`,
+                    background: isAllDraftSubtasksCompleted ? '#527653' : '#8FAF82',
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Draft Subtasks List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '140px', overflowY: 'auto', marginBottom: '0.65rem' }}>
+              {draftSubtasks.map((st) => (
+                <div key={st.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.35rem 0.6rem', background: 'rgba(20, 47, 36, 0.8)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1, textDecoration: st.completed ? 'line-through' : 'none', color: st.completed ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={st.completed}
+                      onChange={() => handleToggleDraftSubtask(st.id)}
+                      style={{ width: '15px', height: '15px', cursor: 'pointer' }}
+                    />
+                    <span>{st.title}</span>
+                  </label>
+                  <button type="button" className="btn btn-danger btn-icon btn-xs" onClick={() => handleRemoveDraftSubtask(st.id)}>
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add Subtask Input */}
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <input
+                type="text"
+                className="form-input"
+                style={{ flex: 1, fontSize: '0.8rem' }}
+                placeholder="Add actionable subtask step..."
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSubtask();
+                  }
+                }}
+              />
+              <button type="button" className="btn btn-secondary btn-xs" onClick={handleAddSubtask}>
+                <Plus size={14} /> Add Step
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -194,7 +339,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
                         padding: '0.4rem 0',
                         borderRadius: 'var(--radius-sm)',
                         border: '1px solid var(--border-color)',
-                        background: selected ? 'var(--button-primary-bg)' : 'var(--bg-primary)',
+                        background: selected ? 'var(--accent-primary)' : 'var(--bg-primary)',
                         color: selected ? '#ffffff' : 'var(--text-secondary)',
                         fontWeight: 600,
                         fontSize: '0.75rem',
@@ -213,8 +358,20 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
             <button type="button" className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              <Plus size={14} /> {taskToEdit ? 'Save Task Changes' : 'Add Task'}
+            <button
+              type="submit"
+              className={`btn btn-primary btn-morph ${submitBtnState}`}
+              disabled={submitBtnState !== 'idle'}
+            >
+              {submitBtnState === 'creating' ? (
+                'Creating...'
+              ) : submitBtnState === 'created' ? (
+                '✓ Created'
+              ) : (
+                <>
+                  <Plus size={14} /> {taskToEdit ? 'Save Task Changes' : 'Add Task'}
+                </>
+              )}
             </button>
           </div>
         </form>
