@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, AISettings } from '../db/schema';
+import { db } from '../db/schema';
 import { resetAllDataToInitialState } from '../db/seed';
-import { getAISettings, saveAISettings, testAIConnection, detectAIProviderFromKey, maskApiKey } from '../services/aiProviderService';
-import { Download, Upload, Trash2, Sparkles, Lock, ShieldAlert, KeyRound } from 'lucide-react';
+import { getAISettings, saveAISettings, testAIConnection, maskApiKey } from '../services/aiProviderService';
+import { Download, Trash2, Sparkles, Lock, ShieldAlert, KeyRound, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
   const settings = useLiveQuery(() => db.settings.get('default'));
@@ -22,21 +22,22 @@ export const SettingsView: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [pendingAction, setPendingAction] = useState<'clear_db' | 'export_data' | null>(null);
 
-  // Simplified AI Configuration: Local vs Cloud
+  // Vendor-Agnostic AI Configuration: Local (Ollama) vs Cloud (Generic API)
   const [aiMode, setAiMode] = useState<'local' | 'cloud'>(aiSettingsLive?.mode || 'local');
-  const [aiProvider, setAiProvider] = useState<AISettings['provider']>(aiSettingsLive?.provider || 'ollama');
   const [aiModel, setAiModel] = useState<string>(aiSettingsLive?.model || 'llama3.1');
   const [apiKeyInput, setApiKeyInput] = useState<string>(aiSettingsLive?.apiKey || '');
-  const [customEndpoint, setCustomEndpoint] = useState<string>(aiSettingsLive?.endpoint || 'http://localhost:11434/v1/chat/completions');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [customEndpoint, setCustomEndpoint] = useState<string>(aiSettingsLive?.endpoint || 'https://api.openai.com/v1');
   const [temperature, setTemperature] = useState<number>(aiSettingsLive?.temperature || 0.7);
 
-  const [aiTone, setAiTone] = useState<AISettings['tone']>('analytical');
+  const [aiTone, setAiTone] = useState<'analytical' | 'motivational' | 'concise' | 'strict' | 'coaching' | 'custom'>('analytical');
   const [behavioralFramework, setBehavioralFramework] = useState<string>(
     'Act as a precise, factual personal productivity copilot. Provide direct, evidence-based data interpretations.'
   );
 
   const [testResult, setTestResult] = useState<{ success?: boolean; message?: string } | null>(null);
-  const [localModelsList, setLocalModelsList] = useState<string[]>(['llama3.1', 'qwen2.5:3b-instruct', 'gemma2:2b']);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [localModelsList, setLocalModelsList] = useState<string[]>(['llama3.1', 'qwen2.5:3b-instruct', 'gemma2:2b', 'mistral']);
 
   // Sync Settings state on load (Fixes Settings Persistence Reset bug)
   useEffect(() => {
@@ -50,17 +51,16 @@ export const SettingsView: React.FC = () => {
 
   useEffect(() => {
     getAISettings().then((res) => {
-      setAiMode(res.mode || (res.provider === 'ollama' ? 'local' : 'cloud'));
-      setAiProvider(res.provider || 'ollama');
-      setAiModel(res.model || 'llama3.1');
+      setAiMode(res.mode || 'local');
+      setAiModel(res.model || (res.mode === 'cloud' ? 'gpt-4o-mini' : 'llama3.1'));
       setApiKeyInput(res.apiKey || '');
-      setCustomEndpoint(res.endpoint || 'http://localhost:11434/v1/chat/completions');
+      setCustomEndpoint(res.endpoint || (res.mode === 'cloud' ? 'https://api.openai.com/v1' : 'http://localhost:11434/v1/chat/completions'));
       setTemperature(res.temperature || 0.7);
       setAiTone(res.tone || 'analytical');
       setBehavioralFramework(res.behavioralFramework || '');
     });
 
-    // Fetch local Ollama models dynamically
+    // Fetch local Ollama models dynamically if running
     fetch('http://localhost:11434/api/tags')
       .then((r) => r.json())
       .then((data) => {
@@ -70,19 +70,7 @@ export const SettingsView: React.FC = () => {
         }
       })
       .catch(() => {});
-  }, [aiSettingsLive?.provider, aiSettingsLive?.model]);
-
-  const handleApiKeyChange = (val: string) => {
-    setApiKeyInput(val);
-    if (val.trim()) {
-      const detected = detectAIProviderFromKey(val);
-      if (detected.provider !== 'custom') {
-        setAiMode('cloud');
-        setAiProvider(detected.provider as any);
-        setAiModel(detected.suggestedModel);
-      }
-    }
-  };
+  }, [aiSettingsLive?.mode, aiSettingsLive?.model]);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +99,7 @@ export const SettingsView: React.FC = () => {
       consecutiveDays100Pct: settings?.consecutiveDays100Pct || 0,
     });
 
-    const activeProvider = aiMode === 'local' ? 'ollama' : aiProvider;
+    const activeProvider = aiMode === 'local' ? 'ollama' : 'cloud';
     await saveAISettings({
       mode: aiMode,
       provider: activeProvider,
@@ -126,12 +114,14 @@ export const SettingsView: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.setProperty('--accent-primary', accentColor);
     setCurrentPasswordInput('');
-    alert('Settings & User Profile saved successfully.');
+    alert('Settings & AI Provider configuration saved successfully.');
   };
 
   const handleTestAIConnection = async () => {
     setTestResult(null);
-    const activeProvider = aiMode === 'local' ? 'ollama' : aiProvider;
+    setIsTestingConnection(true);
+    const activeProvider = aiMode === 'local' ? 'ollama' : 'cloud';
+
     const res = await testAIConnection({
       id: 'default',
       mode: aiMode,
@@ -145,6 +135,8 @@ export const SettingsView: React.FC = () => {
       privacy: { allowHabitData: true, allowTaskData: true, allowProjectData: true, allowGoalData: true, allowJournalData: false, allowHistoricalData: true },
       enableStreaming: true,
     });
+
+    setIsTestingConnection(false);
     setTestResult(res);
   };
 
@@ -185,22 +177,24 @@ export const SettingsView: React.FC = () => {
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div>
-        <h2>Settings & AI Personalization</h2>
-        <p className="subtitle">Streamlined Local vs. Cloud AI engine setup, master security, and profile preferences.</p>
+        <h2>Settings & AI Configuration</h2>
+        <p className="subtitle">Configure Local Ollama models or vendor-agnostic Cloud AI providers.</p>
       </div>
 
-      {/* Streamlined AI Model Integration (Local vs Cloud) */}
+      {/* AI Model Configuration (Local vs Cloud Provider) */}
       <div className="glass-card">
-        <h3><Sparkles size={16} /> Streamlined AI Configuration (Local vs. Cloud)</h3>
+        <h3><Sparkles size={16} style={{ color: '#8FAF82' }} /> AI Engine Setup</h3>
         
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', marginBottom: '1rem' }}>
+        {/* Mode Selector */}
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', marginBottom: '1.25rem' }}>
           <button
             type="button"
             className={`btn ${aiMode === 'local' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ flex: 1, padding: '0.7rem' }}
             onClick={() => {
               setAiMode('local');
-              setAiProvider('ollama');
               setCustomEndpoint('http://localhost:11434/v1/chat/completions');
+              setAiModel('llama3.1');
             }}
           >
             🏠 Local Model (Ollama)
@@ -208,114 +202,133 @@ export const SettingsView: React.FC = () => {
           <button
             type="button"
             className={`btn ${aiMode === 'cloud' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setAiMode('cloud')}
+            style={{ flex: 1, padding: '0.7rem' }}
+            onClick={() => {
+              setAiMode('cloud');
+              if (!customEndpoint || customEndpoint.includes('localhost')) {
+                setCustomEndpoint('https://api.openai.com/v1');
+              }
+              if (aiModel === 'llama3.1') {
+                setAiModel('gpt-4o-mini');
+              }
+            }}
           >
-            ☁️ Cloud Model (API Key)
+            ☁️ Cloud Model (Generic API)
           </button>
         </div>
 
+        {/* Local Model (Ollama) Panel */}
         {aiMode === 'local' ? (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Select Installed Local Ollama Model</label>
-              <select
-                className="form-select"
-                value={aiModel}
-                onChange={(e) => setAiModel(e.target.value)}
-              >
-                {localModelsList.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+              <label className="form-label">Model Name</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ flex: 1 }}
+                  placeholder="e.g. llama3.1, qwen2.5, mistral..."
+                  value={aiModel}
+                  onChange={(e) => setAiModel(e.target.value)}
+                />
+                {localModelsList.length > 0 && (
+                  <select
+                    className="form-select"
+                    style={{ width: '140px' }}
+                    value={localModelsList.includes(aiModel) ? aiModel : ''}
+                    onChange={(e) => {
+                      if (e.target.value) setAiModel(e.target.value);
+                    }}
+                  >
+                    <option value="">Select Local...</option>
+                    {localModelsList.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Local Server Endpoint</label>
-              <input
-                type="text"
-                className="form-input"
-                value="http://localhost:11434/v1/chat/completions"
-                disabled
-              />
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Cloud AI Provider</label>
-              <select
-                className="form-select"
-                value={aiProvider}
-                onChange={(e) => {
-                  const prov = e.target.value as any;
-                  setAiProvider(prov);
-                  if (prov === 'nvidia') {
-                    setCustomEndpoint('https://integrate.api.nvidia.com/v1/chat/completions');
-                    setAiModel('meta/llama-3.1-70b-instruct');
-                  } else if (prov === 'openai') {
-                    setCustomEndpoint('https://api.openai.com/v1/chat/completions');
-                    setAiModel('gpt-4o-mini');
-                  } else if (prov === 'anthropic') {
-                    setAiModel('claude-3-5-sonnet-20241022');
-                  } else if (prov === 'gemini') {
-                    setAiModel('gemini-1.5-flash');
-                  } else if (prov === 'openrouter') {
-                    setCustomEndpoint('https://openrouter.ai/api/v1/chat/completions');
-                    setAiModel('meta-llama/llama-3.1-70b-instruct');
-                  }
-                }}
-              >
-                <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
-                <option value="anthropic">Anthropic Claude (Claude 3.5 Sonnet)</option>
-                <option value="gemini">Google Gemini (Gemini 1.5 Flash)</option>
-                <option value="nvidia">NVIDIA NIM (Open-Source Llama 3.1 70B)</option>
-                <option value="openrouter">OpenRouter (Cloud Open-Source Models)</option>
-                <option value="custom">Custom OpenAI-Compatible Provider</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">API Key {apiKeyInput && <span className="subtitle">({maskApiKey(apiKeyInput)})</span>}</label>
-              <input
-                type="password"
-                className="form-input"
-                value={apiKeyInput}
-                onChange={(e) => handleApiKeyChange(e.target.value)}
-                placeholder="Paste API key (sk-..., nvapi-..., AIza...)"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Model Identifier</label>
-              <input
-                type="text"
-                className="form-input"
-                value={aiModel}
-                onChange={(e) => setAiModel(e.target.value)}
-                placeholder="e.g. gpt-4o-mini, claude-3-5-sonnet..."
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">API Endpoint URL</label>
+              <label className="form-label">Base URL / Endpoint</label>
               <input
                 type="text"
                 className="form-input"
                 value={customEndpoint}
                 onChange={(e) => setCustomEndpoint(e.target.value)}
+                placeholder="http://localhost:11434/v1/chat/completions"
               />
+            </div>
+          </div>
+        ) : (
+          /* Cloud Model Vendor-Agnostic Interface (3 Required Fields: API Key, Base URL, Model Name) */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">
+                API Key * {apiKeyInput && <span className="subtitle">({maskApiKey(apiKeyInput)})</span>}
+              </label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  className="form-input"
+                  style={{ flex: 1, paddingRight: '2.5rem' }}
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  placeholder="Enter your API Key..."
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  style={{ position: 'absolute', right: '0.75rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Base URL *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={customEndpoint}
+                  onChange={(e) => setCustomEndpoint(e.target.value)}
+                  placeholder="e.g. https://api.openai.com/v1 or https://openrouter.ai/api/v1"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Model Name *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={aiModel}
+                  onChange={(e) => setAiModel(e.target.value)}
+                  placeholder="e.g. gpt-4o-mini, claude-3-5-sonnet, deepseek-chat, llama-3.1-70b"
+                  required
+                />
+              </div>
             </div>
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', alignItems: 'center' }}>
-          <button type="button" className="btn btn-secondary" onClick={handleTestAIConnection}>
-            Test AI Connection
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.25rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleTestAIConnection}
+            disabled={isTestingConnection}
+          >
+            {isTestingConnection ? 'Testing Connection...' : 'Test AI Connection'}
           </button>
           {testResult && (
-            <span style={{ fontSize: '0.8rem', color: testResult.success ? 'var(--text-primary)' : 'var(--danger)' }}>
-              {testResult.message}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.825rem', color: testResult.success ? '#527653' : 'var(--danger)', fontWeight: 600 }}>
+              {testResult.success ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+              <span>{testResult.message}</span>
+            </div>
           )}
         </div>
       </div>
@@ -358,7 +371,7 @@ export const SettingsView: React.FC = () => {
           {passwordUpdateError && <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{passwordUpdateError}</span>}
 
           <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-            Save User Profile & Settings
+            Save Profile & AI Configuration
           </button>
         </form>
       </div>

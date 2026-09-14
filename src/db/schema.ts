@@ -231,7 +231,7 @@ export interface AIMessage {
 export interface AISettings {
   id: string;
   mode: 'local' | 'cloud';
-  provider: 'ollama' | 'openai' | 'nvidia' | 'anthropic' | 'gemini' | 'openrouter' | 'custom' | 'builtin';
+  provider: 'ollama' | 'cloud' | string;
   model: string;
   apiKey?: string;
   endpoint?: string;
