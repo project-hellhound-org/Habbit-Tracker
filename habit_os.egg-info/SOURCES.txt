@@ -1,0 +1,8 @@
+README.md
+setup.py
+validate_env.py
+habit_os.egg-info/PKG-INFO
+habit_os.egg-info/SOURCES.txt
+habit_os.egg-info/dependency_links.txt
+habit_os.egg-info/requires.txt
+habit_os.egg-info/top_level.txt
