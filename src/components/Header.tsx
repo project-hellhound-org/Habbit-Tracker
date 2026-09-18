@@ -5,15 +5,16 @@ import { ActiveTab } from '../App';
 import { StreakFlameIndicator } from './StreakFlameIndicator';
 import { StreakFreezeModal } from './StreakFreezeModal';
 import { calculateCurrentStreak } from '../engine/streakEngine';
-import { Sparkles, Calendar } from 'lucide-react';
+import { Sparkles, Calendar, PanelRightClose } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface HeaderProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  onToggleDrawer?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
+export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onToggleDrawer }) => {
   const todayStr = format(new Date(), 'EEEE, MMMM d, yyyy');
   const todayIso = format(new Date(), 'yyyy-MM-dd');
 
@@ -46,12 +47,16 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     <header
       style={{
         height: 'var(--header-height)',
-        background: 'var(--bg-secondary)',
+        background: 'rgba(20, 47, 36, 0.75)',
+        backdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-color)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 1.5rem',
+        position: 'sticky',
+        top: 0,
+        zIndex: 90,
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -63,8 +68,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.8rem', background: 'var(--bg-elevated)', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.8rem', background: 'rgba(13, 34, 26, 0.6)', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
           <Calendar size={14} />
           <span>{todayStr}</span>
         </div>
@@ -81,6 +86,17 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           <button className="btn btn-primary btn-xs" onClick={() => setActiveTab('insights')}>
             <Sparkles size={12} /> AI Analyst
           </button>
+          
+          {onToggleDrawer && (
+            <button
+              className="btn btn-secondary btn-icon"
+              onClick={onToggleDrawer}
+              title="Toggle Contextual Sidebar Drawer"
+              style={{ borderRadius: 'var(--radius-sm)' }}
+            >
+              <PanelRightClose size={17} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -93,4 +109,5 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     </header>
   );
 };
+
 

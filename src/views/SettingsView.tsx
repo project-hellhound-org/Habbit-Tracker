@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/schema';
+import { db, ForestTexture, ForestPalette } from '../db/schema';
 import { resetAllDataToInitialState } from '../db/seed';
 import { getAISettings, saveAISettings, testAIConnection, maskApiKey } from '../services/aiProviderService';
-import { Download, Trash2, Sparkles, Lock, ShieldAlert, KeyRound, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Download, Trash2, Sparkles, Lock, ShieldAlert, KeyRound, Eye, EyeOff, CheckCircle2, AlertCircle, Palette, Image as ImageIcon } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
   const settings = useLiveQuery(() => db.settings.get('default'));
@@ -12,6 +12,8 @@ export const SettingsView: React.FC = () => {
   const [userName, setUserName] = useState(settings?.userName || 'User');
   const [theme, setTheme] = useState<'dark' | 'light' | 'system'>(settings?.theme || 'dark');
   const [accentColor, setAccentColor] = useState<string>(settings?.accentColor || '#ffffff');
+  const [backgroundTexture, setBackgroundTexture] = useState<ForestTexture>(settings?.backgroundTexture || 'mist');
+  const [colorPalette, setColorPalette] = useState<ForestPalette>(settings?.colorPalette || 'pine');
 
   // Master App Password State & Update Verification
   const [appPasswordInput, setAppPasswordInput] = useState(settings?.appPassword || '');
@@ -45,9 +47,11 @@ export const SettingsView: React.FC = () => {
       setUserName(settings.userName || 'User');
       setTheme(settings.theme || 'dark');
       setAccentColor(settings.accentColor || '#ffffff');
+      setBackgroundTexture(settings.backgroundTexture || 'mist');
+      setColorPalette(settings.colorPalette || 'pine');
       setAppPasswordInput(settings.appPassword || '');
     }
-  }, [settings?.userName, settings?.theme, settings?.accentColor, settings?.appPassword]);
+  }, [settings?.userName, settings?.theme, settings?.accentColor, settings?.backgroundTexture, settings?.colorPalette, settings?.appPassword]);
 
   useEffect(() => {
     getAISettings().then((res) => {
@@ -72,6 +76,21 @@ export const SettingsView: React.FC = () => {
       .catch(() => {});
   }, [aiSettingsLive?.mode, aiSettingsLive?.model]);
 
+  const textures: { id: ForestTexture; label: string; desc: string }[] = [
+    { id: 'mist', label: 'Mist Forest Overlay', desc: 'Soft floating ambient mountain fog' },
+    { id: 'grain', label: 'Forest Grain', desc: 'Tactile organic wood and earth noise' },
+    { id: 'leaf_shadow', label: 'Leaf Shadow', desc: 'Subtle botanical canopy silhouettes' },
+    { id: 'evergreen', label: 'Evergreen Forest', desc: 'Deep needle canopy gradients' },
+    { id: 'rainy', label: 'Rainy Forest', desc: 'Misty raindrops with glistening light' },
+  ];
+
+  const palettes: { id: ForestPalette; label: string; previewColor: string; desc: string }[] = [
+    { id: 'pine', label: 'Pine Theme', previewColor: '#2E5E44', desc: 'Deep evergreen pine baseline' },
+    { id: 'moss', label: 'Moss Theme', previewColor: '#456B33', desc: 'Warm earthy lichen & moss' },
+    { id: 'leaf', label: 'Leaf Theme', previewColor: '#327A56', desc: 'Vibrant botanical green canopy' },
+    { id: 'mist', label: 'Mist Theme', previewColor: '#386B6F', desc: 'Cool mountain fog atmosphere' },
+  ];
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordUpdateError('');
@@ -90,6 +109,8 @@ export const SettingsView: React.FC = () => {
       userName,
       theme,
       accentColor,
+      backgroundTexture,
+      colorPalette,
       appPassword: appPasswordInput,
       weekStartDay: 1,
       productivityWeights: { habitWeight: 40, taskWeight: 30, focusWeight: 20, goalWeight: 10 },
@@ -112,9 +133,13 @@ export const SettingsView: React.FC = () => {
     });
 
     document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.style.setProperty('--accent-primary', accentColor);
+    document.documentElement.setAttribute('data-palette', colorPalette);
+    const rootCanvas = document.getElementById('app-root-canvas');
+    if (rootCanvas) {
+      rootCanvas.setAttribute('data-texture', backgroundTexture);
+    }
     setCurrentPasswordInput('');
-    alert('Settings & AI Provider configuration saved successfully.');
+    alert('Settings, Forest Theme & AI Provider configuration saved successfully.');
   };
 
   const handleTestAIConnection = async () => {
@@ -177,8 +202,88 @@ export const SettingsView: React.FC = () => {
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div>
-        <h2>Settings & AI Configuration</h2>
-        <p className="subtitle">Configure Local Ollama models or vendor-agnostic Cloud AI providers.</p>
+        <h2>Settings & Forest Customization</h2>
+        <p className="subtitle">Personalize background textures, color palettes, profile security, and AI models.</p>
+      </div>
+
+      {/* Forest Theme & Visual Customization */}
+      <div className="glass-card">
+        <h3><Palette size={18} style={{ color: 'var(--accent-secondary)' }} /> Forest Palette & Texture Customization</h3>
+        
+        {/* Color Palette Selector */}
+        <div style={{ marginTop: '1rem', marginBottom: '1.25rem' }}>
+          <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
+            Color Palette Theme
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+            {palettes.map((p) => {
+              const isSel = colorPalette === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setColorPalette(p.id);
+                    document.documentElement.setAttribute('data-palette', p.id);
+                  }}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    background: isSel ? 'rgba(25, 61, 47, 0.9)' : 'rgba(13, 34, 26, 0.6)',
+                    border: isSel ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 200ms ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                    <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: p.previewColor }} />
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{p.label}</strong>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{p.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Background Texture Selector */}
+        <div>
+          <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
+            Background Texture Overlay
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            {textures.map((t) => {
+              const isSel = backgroundTexture === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setBackgroundTexture(t.id);
+                    const rootCanvas = document.getElementById('app-root-canvas');
+                    if (rootCanvas) rootCanvas.setAttribute('data-texture', t.id);
+                  }}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    background: isSel ? 'rgba(25, 61, 47, 0.9)' : 'rgba(13, 34, 26, 0.6)',
+                    border: isSel ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 200ms ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                    <ImageIcon size={16} style={{ color: isSel ? 'var(--accent-secondary)' : 'var(--text-muted)' }} />
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{t.label}</strong>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{t.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* AI Model Configuration (Local vs Cloud Provider) */}
@@ -371,7 +476,7 @@ export const SettingsView: React.FC = () => {
           {passwordUpdateError && <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{passwordUpdateError}</span>}
 
           <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-            Save Profile & AI Configuration
+            Save Profile & Forest Preferences
           </button>
         </form>
       </div>
@@ -431,3 +536,4 @@ export const SettingsView: React.FC = () => {
     </div>
   );
 };
+

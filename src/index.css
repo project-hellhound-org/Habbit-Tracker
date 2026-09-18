@@ -1,18 +1,20 @@
 :root {
-  /* Forest Flow Color System Tokens */
-  --bg-primary: #102A20; /* Deep Forest Green */
+  /* Forest Flow Base Color System Tokens (Default: Pine Palette) */
+  --bg-primary: #0D221A; /* Deep Forest Pine */
   --bg-secondary: #142F24; /* Dark Forest Surface */
-  --bg-elevated: #18382A; /* Pine Green Surface */
-  --border-color: #244737;
-  --border-hover: #3A644E;
+  --bg-elevated: #193D2F; /* Elevated Pine Surface */
+  --border-color: rgba(60, 110, 85, 0.28);
+  --border-hover: rgba(100, 170, 130, 0.45);
+  --border-glow: rgba(143, 175, 130, 0.35);
 
   --text-primary: #F3F1E7; /* Warm Paper */
   --text-secondary: #C5D6B9; /* Soft Sage */
-  --text-muted: #8FAF82; /* Sage */
+  --text-muted: #8FAF82; /* Muted Leaf */
 
-  --accent-primary: #315D43; /* Forest Green Button */
-  --accent-hover: #3E704F;
+  --accent-primary: #2E5E44; /* Forest Green Button */
+  --accent-hover: #3A7555;
   --accent-secondary: #8FAF82; /* Sage Accent */
+  --accent-glow: rgba(143, 175, 130, 0.25);
   
   --surface-paper: #F5F3E9;
   --surface-paper-light: #FAF9F3;
@@ -20,14 +22,14 @@
   --text-paper-dark: #1E3026;
 
   /* Progress Bar Colors */
-  --progress-track: #D8E1D1;
+  --progress-track: rgba(216, 225, 209, 0.18);
   --progress-fill: #527653;
 
   /* Heatmap Performance Colors */
-  --heatmap-25: #737373; /* Grey 25% */
-  --heatmap-50: #F59E0B; /* Yellow 50% */
-  --heatmap-75: #F97316; /* Orange 75% */
-  --heatmap-100: #EF4444; /* Red 100% */
+  --heatmap-25: #556B60; /* Soft Pine Grey */
+  --heatmap-50: #E6A817; /* Solar Yellow */
+  --heatmap-75: #E86A33; /* Terracotta Orange */
+  --heatmap-100: #429867; /* Vibrant Moss Green */
 
   /* Semantic Tokens */
   --success: #527653;
@@ -45,9 +47,10 @@
   --font-serif: 'DM Serif Display', Georgia, serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
 
   --header-height: 64px;
@@ -55,14 +58,87 @@
   /* Motion Duration Tokens */
   --motion-instant: 100ms;
   --motion-fast: 180ms;
-  --motion-normal: 240ms;
-  --motion-medium: 360ms;
-  --motion-slow: 600ms;
+  --motion-normal: 260ms;
+  --motion-medium: 380ms;
+  --motion-slow: 650ms;
 
   /* Motion Easing Tokens */
   --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-enter: cubic-bezier(0, 0, 0.2, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-fluid: cubic-bezier(0.25, 1, 0.35, 1);
+}
+
+/* ==========================================================================
+   COLOR PALETTE THEMES (Pine, Moss, Leaf, Mist)
+   ========================================================================== */
+
+/* 1. Pine Palette (Default Deep Evergreen) */
+[data-palette='pine'] {
+  --bg-primary: #0D221A;
+  --bg-secondary: #142F24;
+  --bg-elevated: #193D2F;
+  --border-color: rgba(60, 110, 85, 0.28);
+  --border-hover: rgba(100, 170, 130, 0.45);
+  --border-glow: rgba(143, 175, 130, 0.35);
+  --accent-primary: #2E5E44;
+  --accent-hover: #3A7555;
+  --accent-secondary: #8FAF82;
+  --accent-glow: rgba(143, 175, 130, 0.25);
+  --text-primary: #F3F1E7;
+  --text-secondary: #C5D6B9;
+  --text-muted: #8FAF82;
+}
+
+/* 2. Moss Palette (Warm Earthy Earth & Lichen) */
+[data-palette='moss'] {
+  --bg-primary: #172215;
+  --bg-secondary: #22321D;
+  --bg-elevated: #2C4026;
+  --border-color: rgba(90, 130, 66, 0.28);
+  --border-hover: rgba(135, 185, 105, 0.45);
+  --border-glow: rgba(163, 201, 137, 0.35);
+  --accent-primary: #456B33;
+  --accent-hover: #568541;
+  --accent-secondary: #A3C989;
+  --accent-glow: rgba(163, 201, 137, 0.25);
+  --text-primary: #F4F5E9;
+  --text-secondary: #D4E3C5;
+  --text-muted: #9BB885;
+}
+
+/* 3. Leaf Palette (Vibrant Botanical Canopy) */
+[data-palette='leaf'] {
+  --bg-primary: #10251B;
+  --bg-secondary: #173729;
+  --bg-elevated: #1F4635;
+  --border-color: rgba(54, 122, 89, 0.28);
+  --border-hover: rgba(85, 175, 130, 0.45);
+  --border-glow: rgba(146, 214, 177, 0.35);
+  --accent-primary: #327A56;
+  --accent-hover: #40996D;
+  --accent-secondary: #92D6B1;
+  --accent-glow: rgba(146, 214, 177, 0.25);
+  --text-primary: #EEF8F2;
+  --text-secondary: #BEE3CE;
+  --text-muted: #7FC49E;
+}
+
+/* 4. Mist Palette (Cool Atmosphere & Mountain Fog) */
+[data-palette='mist'] {
+  --bg-primary: #142024;
+  --bg-secondary: #1D2D33;
+  --bg-elevated: #263B42;
+  --border-color: rgba(60, 110, 113, 0.28);
+  --border-hover: rgba(100, 165, 170, 0.45);
+  --border-glow: rgba(160, 196, 201, 0.35);
+  --accent-primary: #386B6F;
+  --accent-hover: #48868B;
+  --accent-secondary: #A0C4C9;
+  --accent-glow: rgba(160, 196, 201, 0.25);
+  --text-primary: #EFF5F6;
+  --text-secondary: #C7DFE2;
+  --text-muted: #8FB4B9;
 }
 
 [data-theme='light'] {
@@ -92,14 +168,100 @@
 
 body {
   background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(circle at 50% 20%, rgba(82, 118, 83, 0.14) 0%, rgba(16, 42, 32, 0.96) 75%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
   color: var(--text-primary);
   font-family: var(--font-sans);
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.5;
+  transition: background-color var(--motion-slow) var(--ease-standard), color var(--motion-slow) var(--ease-standard);
+}
+
+/* ==========================================================================
+   MODULAR BACKGROUND TEXTURES
+   (Mist Forest, Forest Grain, Leaf Shadow, Evergreen Forest, Rainy Forest)
+   ========================================================================== */
+
+#app-root-canvas {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* 1. Mist Forest Overlay */
+#app-root-canvas[data-texture='mist']::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(ellipse at 50% -10%, rgba(160, 196, 201, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse at 80% 60%, rgba(82, 118, 83, 0.15) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='fogFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23fogFilter)' opacity='0.08'/%3E%3C/svg%3E");
+  animation: mistDrift 45s infinite alternate ease-in-out;
+}
+
+/* 2. Forest Grain */
+#app-root-canvas[data-texture='grain']::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 40% 30%, rgba(143, 175, 130, 0.12) 0%, transparent 65%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grainFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grainFilter)' opacity='0.065'/%3E%3C/svg%3E");
+}
+
+/* 3. Leaf Shadow */
+#app-root-canvas[data-texture='leaf_shadow']::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 75% 20%, rgba(146, 214, 177, 0.14) 0%, transparent 55%),
+    radial-gradient(circle at 20% 80%, rgba(46, 94, 68, 0.3) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 500 500' xmlns='http://www.w3.org/2000/svg'%3E%3Cg opacity='0.05' fill='%238FAF82'%3E%3Cpath d='M150 100 Q 250 50 300 150 Q 200 250 150 100 Z'/%3E%3Cpath d='M350 300 Q 450 220 480 340 Q 380 440 350 300 Z'/%3E%3Cpath d='M50 350 Q 120 280 180 380 Q 90 460 50 350 Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: cover;
+}
+
+/* 4. Evergreen Forest */
+#app-root-canvas[data-texture='evergreen']::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 15%, rgba(66, 152, 103, 0.18) 0%, transparent 60%),
+    radial-gradient(circle at 10% 90%, rgba(13, 34, 26, 0.95) 0%, transparent 70%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cg opacity='0.04' stroke='%23C5D6B9' stroke-width='1'%3E%3Cline x1='0' y1='0' x2='300' y2='300' /%3E%3Cline x1='300' y1='0' x2='0' y2='300' /%3E%3Cline x1='150' y1='0' x2='150' y2='300' /%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* 5. Rainy Forest */
+#app-root-canvas[data-texture='rainy']::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(160, 196, 201, 0.15) 0%, transparent 65%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 100 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='20' y1='0' x2='10' y2='200' stroke='%23A0C4C9' stroke-width='0.75' opacity='0.08'/%3E%3Cline x1='70' y1='0' x2='60' y2='200' stroke='%23A0C4C9' stroke-width='0.75' opacity='0.06'/%3E%3C/svg%3E");
+  animation: rainFallback 2s linear infinite;
+}
+
+@keyframes mistDrift {
+  0% { background-position: 0px 0px, 0px 0px, 0px 0px; }
+  50% { background-position: 30px -20px, -20px 30px, 10px -10px; }
+  100% { background-position: -20px 20px, 30px -10px, -15px 15px; }
+}
+
+@keyframes rainFallback {
+  0% { background-position: 0 0; }
+  100% { background-position: -20px 200px; }
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -111,23 +273,69 @@ button, input, select, textarea {
   font-family: inherit;
 }
 
-/* Forest Flow Glass & Warm Paper Cards */
-.glass-card {
+/* ==========================================================================
+   LIQUID FLUID PANELS SYSTEM
+   ========================================================================== */
+
+.liquid-panel {
+  position: relative;
   background: var(--bg-secondary);
+  background: linear-gradient(145deg, rgba(20, 47, 36, 0.72) 0%, rgba(13, 34, 26, 0.85) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  transition: transform var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard);
+  padding: 1.35rem;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  transition: transform var(--motion-normal) var(--ease-fluid),
+              border-color var(--motion-normal) var(--ease-fluid),
+              box-shadow var(--motion-normal) var(--ease-fluid);
+  overflow: hidden;
 }
 
-.glass-card:hover {
-  transform: translateY(-2px);
+.liquid-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 45%,
+    var(--accent-glow) 50%,
+    rgba(255, 255, 255, 0.03) 55%,
+    transparent 100%
+  );
+  transform: skewX(-20deg) translateX(-100%);
+  transition: transform 0.8s var(--ease-fluid);
+  pointer-events: none;
+}
+
+.liquid-panel:hover::before {
+  transform: skewX(-20deg) translateX(100%);
+}
+
+.liquid-panel-interactive:hover {
+  transform: translateY(-3px) scale(1.004);
   border-color: var(--border-hover);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.45), 0 0 20px var(--accent-glow);
 }
 
-/* Warm Paper Card Variant */
+.liquid-panel-elevated {
+  background: linear-gradient(140deg, rgba(25, 61, 47, 0.85) 0%, rgba(16, 40, 31, 0.92) 100%);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid var(--border-glow);
+  box-shadow: 0 18px 45px -10px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.12);
+}
+
+/* Glass & Paper Cards Compatibility */
+.glass-card {
+  composes: liquid-panel;
+}
+
 .paper-card {
   background: var(--surface-paper);
   color: var(--text-paper-dark);
@@ -137,7 +345,7 @@ button, input, select, textarea {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-/* Progress bar styling */
+/* Progress Bar Styling */
 .progress-bar-track {
   background: var(--progress-track);
   border-radius: var(--radius-full);
@@ -147,10 +355,11 @@ button, input, select, textarea {
 }
 
 .progress-bar-fill {
-  background: var(--progress-fill);
+  background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   height: 100%;
   border-radius: var(--radius-full);
-  transition: width var(--motion-medium) var(--ease-standard);
+  transition: width var(--motion-medium) var(--ease-fluid);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 /* Buttons */
@@ -158,38 +367,44 @@ button, input, select, textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1.1rem;
-  border-radius: 10px;
-  font-size: 0.85rem;
+  gap: 0.55rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background var(--motion-fast) var(--ease-standard), transform var(--motion-instant) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+  transition: background var(--motion-fast) var(--ease-standard),
+              transform var(--motion-instant) var(--ease-standard),
+              border-color var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard);
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn-primary {
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%);
   color: #FFFFFF;
+  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
 .btn-primary:hover {
   background: var(--accent-hover);
+  box-shadow: 0 6px 20px var(--accent-glow);
 }
 
 .btn-secondary {
-  background: var(--bg-elevated);
+  background: rgba(25, 61, 47, 0.6);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
   border-color: var(--border-hover);
-  background: var(--bg-secondary);
+  background: rgba(25, 61, 47, 0.9);
 }
 
 .btn-paper {
@@ -209,167 +424,225 @@ button, input, select, textarea {
 }
 
 .btn-xs {
-  padding: 0.25rem 0.55rem;
+  padding: 0.3rem 0.65rem;
   font-size: 0.75rem;
   border-radius: var(--radius-sm);
 }
 
 .btn-icon {
-  padding: 0.4rem;
+  padding: 0.45rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .form-label {
-  font-size: 0.775rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .form-input, .form-select, .form-textarea {
-  background: var(--bg-primary);
+  background: rgba(13, 34, 26, 0.75);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 0.55rem 0.75rem;
+  padding: 0.6rem 0.85rem;
   color: var(--text-primary);
-  font-size: 0.85rem;
-  transition: border-color var(--motion-fast) var(--ease-standard);
+  font-size: 0.875rem;
+  backdrop-filter: blur(8px);
+  transition: border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard);
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   outline: none;
   border-color: var(--accent-secondary);
-  box-shadow: 0 0 0 2px rgba(143, 175, 130, 0.2);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .subtitle {
-  font-size: 0.825rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
 }
 
-/* CRUD Micro-Interaction Animations */
+/* ==========================================================================
+   DYNAMIC MOTION & ANIMATION SYSTEM
+   (Launch sequence, tab page transitions, CRUD micro-interactions)
+   ========================================================================== */
+
+/* 1. App Launch Transition Sequence */
+@keyframes launchFluidScaleReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+    filter: blur(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.01) translateY(-2px);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
+  }
+}
+
+.app-launch-reveal {
+  animation: launchFluidScaleReveal 750ms var(--ease-fluid) forwards;
+}
+
+/* 2. Internal Navigation Tab Page Transitions */
+@keyframes navPageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.nav-page-transition {
+  animation: navPageSlideIn 320ms var(--ease-fluid) forwards;
+}
+
+/* 3. Micro-Interaction Keyframes */
 @keyframes saveRipple {
-  0% { box-shadow: 0 0 0 0 rgba(82, 118, 83, 0.6); }
-  70% { box-shadow: 0 0 0 10px rgba(82, 118, 83, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(82, 118, 83, 0); }
+  0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  70% { box-shadow: 0 0 0 14px rgba(0, 0, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
 }
 
 @keyframes inlineEditPulse {
   0%, 100% { border-color: var(--border-color); }
-  50% { border-color: var(--accent-secondary); box-shadow: 0 0 8px rgba(143, 175, 130, 0.3); }
-}
-
-@keyframes splashScaleReveal {
-  0% { transform: scale(0.92); opacity: 0; }
-  50% { transform: scale(1.04); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
+  50% { border-color: var(--accent-secondary); box-shadow: 0 0 12px var(--accent-glow); }
 }
 
 .animate-save-ripple {
-  animation: saveRipple 600ms var(--ease-standard);
+  animation: saveRipple 650ms var(--ease-fluid);
 }
 
 .animate-inline-edit {
   animation: inlineEditPulse 1.8s infinite ease-in-out;
 }
 
-.splash-reveal {
-  animation: splashScaleReveal 800ms var(--ease-standard) forwards;
+/* ==========================================================================
+   DYNAMIC REDESIGNED SIDEBAR
+   ========================================================================== */
+
+.dynamic-sidebar {
+  position: relative;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(13, 34, 26, 0.95) 0%, rgba(20, 47, 36, 0.92) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 6px 0 25px rgba(0, 0, 0, 0.25);
+  transition: width var(--motion-medium) var(--ease-fluid);
 }
 
-/* Glass Surface Layers */
-.glass-level-1 {
-  background: rgba(25, 55, 42, 0.70);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(160, 190, 160, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.8rem 1.15rem; /* Generous vertical spacing */
+  border-radius: var(--radius-md);
+  font-size: 1rem; /* Increased text size (0.95rem - 1.05rem range) */
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  margin-bottom: 0.45rem;
+  transition: all var(--motion-fast) var(--ease-fluid);
+  position: relative;
+  overflow: hidden;
 }
 
-.glass-level-2 {
-  background: rgba(25, 55, 42, 0.78);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(160, 190, 160, 0.16);
-  border-radius: 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+.sidebar-nav-item:hover {
+  color: var(--text-primary);
+  background: rgba(25, 61, 47, 0.5);
+  border-color: rgba(143, 175, 130, 0.15);
+  transform: translateX(3px);
 }
 
-.glass-level-3 {
-  background: rgba(25, 55, 42, 0.88);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(160, 190, 160, 0.24);
-  border-radius: 24px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+.sidebar-nav-item.active {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, rgba(46, 94, 68, 0.85) 0%, rgba(25, 61, 47, 0.95) 100%);
+  border-color: var(--border-glow);
+  font-weight: 600;
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
-/* Scrim Backdrop Overlay */
+.sidebar-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 4px;
+  background: var(--accent-secondary);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 10px var(--accent-secondary);
+}
+
+/* ==========================================================================
+   CONTEXTUAL SIDEBAR DRAWER (Replaces Bottom Drawer)
+   ========================================================================== */
+
 .drawer-scrim {
   position: fixed;
   inset: 0;
-  background: rgba(4, 15, 10, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(5, 16, 12, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 990;
-  transition: opacity var(--motion-normal) var(--ease-standard);
+  animation: navPageSlideIn 200ms var(--ease-enter);
 }
 
-/* Contextual Sidebar Drawer */
 .contextual-drawer-right {
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 440px;
-  max-width: 90vw;
+  width: 460px;
+  max-width: 92vw;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  background: rgba(20, 47, 36, 0.94);
-  backdrop-filter: blur(24px);
-  border-left: 1px solid rgba(160, 190, 160, 0.18);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(160deg, rgba(20, 47, 36, 0.96) 0%, rgba(13, 34, 26, 0.98) 100%);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border-left: 1px solid var(--border-glow);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.45);
   transform: translateX(100%);
-  transition: transform var(--motion-medium) cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--motion-medium) var(--ease-fluid);
 }
 
 .contextual-drawer-right.open {
   transform: translateX(0);
 }
 
-/* Swipe-to-Reveal Bottom Drawer */
-.bottom-drawer {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 0;
-  width: 100%;
-  max-width: 720px;
-  background: rgba(20, 47, 36, 0.96);
-  backdrop-filter: blur(24px);
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  border: 1px solid rgba(160, 190, 160, 0.18);
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.4);
-  z-index: 900;
-  transition: transform var(--motion-medium) cubic-bezier(0.16, 1, 0.3, 1);
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(13, 34, 26, 0.4);
 }
 
-.bottom-drawer.collapsed {
-  transform: translate(-50%, calc(100% - 36px));
-}
-
-.bottom-drawer.peek {
-  transform: translate(-50%, calc(100% - 90px));
-}
-
-.bottom-drawer.expanded {
-  transform: translate(-50%, 0);
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
 }
 
 /* Button Morphing Animation */
@@ -396,5 +669,6 @@ button, input, select, textarea {
     scroll-behavior: auto !important;
   }
 }
+
 
 

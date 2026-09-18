@@ -180,12 +180,17 @@ export interface Tag {
   color: string;
 }
 
+export type ForestTexture = 'mist' | 'grain' | 'leaf_shadow' | 'evergreen' | 'rainy';
+export type ForestPalette = 'pine' | 'moss' | 'leaf' | 'mist';
+
 export interface AppSettings {
   id: string;
   userName: string;
   appPassword?: string;
   theme: 'dark' | 'light' | 'system';
   accentColor: string;
+  backgroundTexture?: ForestTexture;
+  colorPalette?: ForestPalette;
   weekStartDay: number;
   productivityWeights: {
     habitWeight: number;
