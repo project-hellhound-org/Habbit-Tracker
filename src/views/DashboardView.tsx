@@ -30,8 +30,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab }) =>
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2>Minimal Ink Workspace Dashboard</h2>
-          <p className="subtitle">High-density summary of your habit specifications and task workload.</p>
+          <h2>🌿 Forest Flow Workspace Overview</h2>
+          <p className="subtitle">Calm, high-density summary of habit specifications, workload tasks, and daily execution.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
