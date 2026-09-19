@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Task, Subtask } from '../db/schema';
 import { AddTaskModal } from '../components/AddTaskModal';
 import { TaskContextualDrawer } from '../components/TaskContextualDrawer';
-import { Plus, Trash2, Edit3, CheckSquare, Calendar, CheckCircle2, ChevronRight, Flame } from 'lucide-react';
+import { Plus, Trash2, Edit3, CheckSquare, Calendar, CheckCircle2, ChevronRight, Flame, AlertTriangle, Layers } from 'lucide-react';
 
 export const TasksView: React.FC = () => {
   const tasks = useLiveQuery(() => db.tasks.toArray()) || [];
@@ -16,6 +16,12 @@ export const TasksView: React.FC = () => {
   const [selectedTaskForDrawer, setSelectedTaskForDrawer] = useState<Task | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  const completedTasksCount = tasks.filter((t) => t.status === 'completed').length;
+  const criticalTasksCount = tasks.filter((t) => t.priority === 'critical' && t.status !== 'completed').length;
+  const completedSubtasksCount = allSubtasks.filter((s) => s.completed).length;
+  const totalSubtasksCount = allSubtasks.length || 1;
+  const subtasksOverallPct = allSubtasks.length > 0 ? Math.round((completedSubtasksCount / totalSubtasksCount) * 100) : 100;
+
   const handleToggleTaskStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'completed' ? 'planned' : 'completed';
     await db.tasks.update(id, {
@@ -24,7 +30,6 @@ export const TasksView: React.FC = () => {
       updatedAt: new Date().toISOString(),
     });
 
-    // If task is checked manually, mark all its subtasks completed
     if (newStatus === 'completed') {
       const taskSubs = allSubtasks.filter((s) => s.taskId === id);
       await Promise.all(taskSubs.map((s) => db.subtasks.update(s.id, { completed: true })));
@@ -35,7 +40,6 @@ export const TasksView: React.FC = () => {
     const nextCompleted = !currentCompleted;
     await db.subtasks.update(subtaskId, { completed: nextCompleted });
 
-    // Inspect remaining subtasks for parent task
     const parentSubs = allSubtasks.map((s) => (s.id === subtaskId ? { ...s, completed: nextCompleted } : s)).filter((s) => s.taskId === parentTaskId);
     const allDone = parentSubs.length > 0 && parentSubs.every((s) => s.completed);
 
@@ -73,12 +77,13 @@ export const TasksView: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="view-container">
+      {/* Header Bar */}
+      <div className="view-header">
         <div>
-          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>Tasks & Subtasks Management</h2>
-          <p className="subtitle">
-            Define main objectives, manage subtasks incrementally, and trigger full completion state upon satisfying subtasks.
+          <h1 className="view-header-title">Tasks & Subtasks Management</h1>
+          <p className="view-header-subtitle">
+            Organize main objectives, manage subtask steps, and automatically trigger completion.
           </p>
         </div>
         <button
@@ -88,16 +93,57 @@ export const TasksView: React.FC = () => {
             setIsAddTaskModalOpen(true);
           }}
         >
-          <Plus size={14} /> Create Task & Subtasks
+          <Plus size={16} /> Create Task & Subtasks
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+      {/* Summary Stat Badges */}
+      <div className="stat-badge-grid">
+        <div className="liquid-panel flip-card-item">
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-secondary)', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>WORKLOAD OBJECTIVES</span>
+            <CheckSquare size={18} />
+          </div>
+          <div className="hero-stat-number">{tasks.length}</div>
+          <span style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
+            Total active parent tasks
+          </span>
+        </div>
+
+        <div className="liquid-panel flip-card-item">
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-secondary)', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>COMPLETED TASKS</span>
+            <CheckCircle2 size={18} />
+          </div>
+          <div className="hero-stat-number">
+            {completedTasksCount} <span style={{ fontSize: '1.4rem', color: 'var(--text-muted)', fontWeight: 500 }}>/ {tasks.length}</span>
+          </div>
+          <span style={{ fontSize: '0.825rem', color: 'var(--accent-secondary)', marginTop: '0.2rem', display: 'block' }}>
+            Finished objectives
+          </span>
+        </div>
+
+        <div className="liquid-panel flip-card-item">
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--warning)', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>SUBTASKS PROGRESS</span>
+            <Layers size={18} />
+          </div>
+          <div className="hero-stat-number" style={{ color: 'var(--accent-secondary)' }}>
+            {subtasksOverallPct}%
+          </div>
+          <span style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
+            {completedSubtasksCount} of {allSubtasks.length} subtasks done
+          </span>
+        </div>
+      </div>
+
+      {/* Task Cards Container */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {tasks.length === 0 ? (
-          <div className="glass-card" style={{ textAlign: 'center', padding: '3rem' }}>
-            <CheckSquare size={36} style={{ color: '#8FAF82', margin: '0 auto 0.75rem auto' }} />
-            <h3>No Tasks Registered</h3>
-            <p className="subtitle" style={{ maxWidth: '400px', margin: '0.3rem auto 1rem auto' }}>
+          <div className="liquid-panel" style={{ textAlign: 'center', padding: '3.5rem' }}>
+            <CheckSquare size={40} style={{ color: 'var(--accent-secondary)', margin: '0 auto 1rem auto' }} />
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>No Tasks Registered</h3>
+            <p style={{ maxWidth: '440px', margin: '0.5rem auto 1.25rem auto', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               Create parent tasks and define incremental subtask steps to track progress toward major objectives.
             </p>
             <button
@@ -107,7 +153,7 @@ export const TasksView: React.FC = () => {
                 setIsAddTaskModalOpen(true);
               }}
             >
-              <Plus size={14} /> Add First Task
+              <Plus size={16} /> Add First Task
             </button>
           </div>
         ) : (
@@ -120,30 +166,30 @@ export const TasksView: React.FC = () => {
             return (
               <div
                 key={t.id}
-                className="glass-card"
+                className="liquid-panel flip-card-item"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.85rem',
-                  border: isFullCompletion || t.status === 'completed' ? '1px solid rgba(82, 118, 83, 0.5)' : '1px solid var(--border-color)',
-                  background: isFullCompletion || t.status === 'completed' ? 'rgba(20, 47, 36, 0.95)' : 'var(--bg-secondary)',
+                  gap: '1rem',
+                  padding: '1.5rem',
+                  border: isFullCompletion || t.status === 'completed' ? '1px solid var(--border-glow)' : '1px solid var(--border-color)',
                 }}
               >
                 {/* Main Task Header Row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1, minWidth: '280px' }}>
                     <input
                       type="checkbox"
                       checked={t.status === 'completed'}
                       onChange={() => handleToggleTaskStatus(t.id, t.status)}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#315D43' }}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
                     />
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                         <span
                           onClick={() => handleOpenDrawer(t)}
                           style={{
-                            fontSize: '1rem',
+                            fontSize: '1.15rem',
                             fontWeight: 700,
                             cursor: 'pointer',
                             textDecoration: t.status === 'completed' ? 'line-through' : 'none',
@@ -153,70 +199,69 @@ export const TasksView: React.FC = () => {
                           {t.title}
                         </span>
                         {(isFullCompletion || t.status === 'completed') && (
-                          <span style={{ fontSize: '0.7rem', color: '#527653', background: 'rgba(82,118,83,0.2)', padding: '0.15rem 0.45rem', borderRadius: 'var(--radius-sm)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                            <CheckCircle2 size={12} /> Full Completion
+                          <span style={{ fontSize: '0.725rem', color: 'var(--accent-secondary)', background: 'rgba(82, 118, 83, 0.25)', padding: '0.2rem 0.55rem', borderRadius: 'var(--radius-sm)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <CheckCircle2 size={13} /> Full Completion
                           </span>
                         )}
                       </div>
-                      {t.description && <div className="subtitle" style={{ fontSize: '0.775rem' }}>{t.description}</div>}
+                      {t.description && <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>{t.description}</p>}
                     </div>
                   </div>
 
-                  {/* Task Card Action Buttons */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Task Action Buttons */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                     <span
                       style={{
-                        fontSize: '0.7rem',
+                        fontSize: '0.725rem',
                         fontWeight: 700,
-                        padding: '0.15rem 0.5rem',
+                        padding: '0.2rem 0.6rem',
                         borderRadius: 'var(--radius-sm)',
-                        background: t.priority === 'critical' ? 'var(--danger-bg)' : 'var(--success-bg)',
-                        color: t.priority === 'critical' ? 'var(--danger)' : '#8FAF82',
-                        border: `1px solid ${t.priority === 'critical' ? 'var(--danger)' : 'var(--border-color)'}`,
+                        background: t.priority === 'critical' ? 'var(--danger-bg)' : 'rgba(82, 118, 83, 0.2)',
+                        color: t.priority === 'critical' ? 'var(--danger)' : 'var(--accent-secondary)',
+                        textTransform: 'uppercase',
                       }}
                     >
-                      {t.priority.toUpperCase()}
+                      {t.priority}
                     </span>
 
                     <button
                       className="btn btn-secondary btn-xs"
                       onClick={() => handleOpenDrawer(t)}
-                      style={{ fontSize: '0.75rem' }}
                     >
-                      Inspect Drawer <ChevronRight size={14} />
+                      Inspect Drawer <ChevronRight size={15} />
                     </button>
 
-                    <button className="btn btn-secondary btn-icon btn-xs" title="Edit Task" onClick={() => handleEditTask(t)}>
-                      <Edit3 size={12} />
+                    <button className="btn btn-secondary btn-icon" title="Edit Task" onClick={() => handleEditTask(t)}>
+                      <Edit3 size={15} />
                     </button>
 
-                    <button className="btn btn-danger btn-icon btn-xs" title="Delete Task" onClick={() => handleDeleteTask(t.id)}>
-                      <Trash2 size={12} />
+                    <button className="btn btn-danger btn-icon" title="Delete Task" onClick={() => handleDeleteTask(t.id)}>
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
 
-                {/* Subtask Progress & Inline Checklist */}
+                {/* Subtasks Progress & Inline Checklist */}
                 {taskSubs.length > 0 && (
-                  <div style={{ background: 'rgba(16, 42, 32, 0.5)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(160, 190, 160, 0.12)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                       <span>Subtasks Progress ({completedSubsCount}/{taskSubs.length})</span>
-                      <strong style={{ color: isFullCompletion ? '#527653' : '#8FAF82' }}>{subPct}%</strong>
+                      <strong style={{ color: isFullCompletion ? 'var(--accent-secondary)' : 'var(--text-primary)' }}>{subPct}%</strong>
                     </div>
 
-                    <div className="progress-bar-track" style={{ height: '6px' }}>
-                      <div className="progress-bar-fill" style={{ width: `${subPct}%`, background: isFullCompletion ? '#527653' : '#8FAF82' }} />
+                    <div className="progress-bar-track" style={{ height: '7px' }}>
+                      <div className="progress-bar-fill" style={{ width: `${subPct}%` }} />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.35rem', marginTop: '0.2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.5rem', marginTop: '0.35rem' }}>
                       {taskSubs.map((st) => (
                         <label
                           key={st.id}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.45rem',
-                            fontSize: '0.775rem',
+                            gap: '0.55rem',
+                            fontSize: '0.825rem',
                             cursor: 'pointer',
                             color: st.completed ? 'var(--text-muted)' : 'var(--text-primary)',
                             textDecoration: st.completed ? 'line-through' : 'none',
@@ -226,7 +271,7 @@ export const TasksView: React.FC = () => {
                             type="checkbox"
                             checked={st.completed}
                             onChange={() => handleToggleSubtaskInline(st.id, st.completed, t.id)}
-                            style={{ width: '14px', height: '14px', cursor: 'pointer', accentColor: '#315D43' }}
+                            style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
                           />
                           <span>{st.title}</span>
                         </label>
@@ -257,3 +302,4 @@ export const TasksView: React.FC = () => {
     </div>
   );
 };
+

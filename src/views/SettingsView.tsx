@@ -200,22 +200,28 @@ export const SettingsView: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      <div>
-        <h2>Settings & Forest Customization</h2>
-        <p className="subtitle">Personalize background textures, color palettes, profile security, and AI models.</p>
+    <div className="view-container">
+      <div className="view-header">
+        <div>
+          <h1 className="view-header-title">Settings & Forest Customization</h1>
+          <p className="view-header-subtitle">
+            Personalize background textures, color palettes, profile security, and AI models.
+          </p>
+        </div>
       </div>
 
       {/* Forest Theme & Visual Customization */}
-      <div className="glass-card">
-        <h3><Palette size={18} style={{ color: 'var(--accent-secondary)' }} /> Forest Palette & Texture Customization</h3>
+      <div className="liquid-panel flip-card-item">
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Palette size={20} style={{ color: 'var(--accent-secondary)' }} /> Forest Palette & Texture Customization
+        </h3>
         
         {/* Color Palette Selector */}
-        <div style={{ marginTop: '1rem', marginBottom: '1.25rem' }}>
-          <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
+        <div style={{ marginTop: '1.25rem', marginBottom: '1.5rem' }}>
+          <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block', fontWeight: 600 }}>
             Color Palette Theme
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
             {palettes.map((p) => {
               const isSel = colorPalette === p.id;
               return (
@@ -227,20 +233,21 @@ export const SettingsView: React.FC = () => {
                     document.documentElement.setAttribute('data-palette', p.id);
                   }}
                   style={{
-                    padding: '0.75rem 1rem',
+                    padding: '1rem 1.25rem',
                     borderRadius: 'var(--radius-md)',
                     background: isSel ? 'rgba(25, 61, 47, 0.9)' : 'rgba(13, 34, 26, 0.6)',
                     border: isSel ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
                     cursor: 'pointer',
                     textAlign: 'left',
                     transition: 'all 200ms ease',
+                    boxShadow: isSel ? '0 0 16px rgba(143, 175, 130, 0.25)' : 'none',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                    <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: p.previewColor }} />
-                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{p.label}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem' }}>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: p.previewColor, boxShadow: '0 0 8px rgba(0,0,0,0.5)' }} />
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{p.label}</strong>
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{p.desc}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{p.desc}</p>
                 </button>
               );
             })}
@@ -249,10 +256,10 @@ export const SettingsView: React.FC = () => {
 
         {/* Background Texture Selector */}
         <div>
-          <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
+          <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block', fontWeight: 600 }}>
             Background Texture Overlay
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
             {textures.map((t) => {
               const isSel = backgroundTexture === t.id;
               return (
@@ -265,20 +272,21 @@ export const SettingsView: React.FC = () => {
                     if (rootCanvas) rootCanvas.setAttribute('data-texture', t.id);
                   }}
                   style={{
-                    padding: '0.75rem 1rem',
+                    padding: '1rem 1.25rem',
                     borderRadius: 'var(--radius-md)',
                     background: isSel ? 'rgba(25, 61, 47, 0.9)' : 'rgba(13, 34, 26, 0.6)',
                     border: isSel ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
                     cursor: 'pointer',
                     textAlign: 'left',
                     transition: 'all 200ms ease',
+                    boxShadow: isSel ? '0 0 16px rgba(143, 175, 130, 0.25)' : 'none',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                    <ImageIcon size={16} style={{ color: isSel ? 'var(--accent-secondary)' : 'var(--text-muted)' }} />
-                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{t.label}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem' }}>
+                    <ImageIcon size={18} style={{ color: isSel ? 'var(--accent-secondary)' : 'var(--text-muted)' }} />
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{t.label}</strong>
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{t.desc}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{t.desc}</p>
                 </button>
               );
             })}
@@ -287,15 +295,17 @@ export const SettingsView: React.FC = () => {
       </div>
 
       {/* AI Model Configuration (Local vs Cloud Provider) */}
-      <div className="glass-card">
-        <h3><Sparkles size={16} style={{ color: '#8FAF82' }} /> AI Engine Setup</h3>
+      <div className="liquid-panel flip-card-item">
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Sparkles size={20} style={{ color: '#8FAF82' }} /> AI Engine Setup
+        </h3>
         
         {/* Mode Selector */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.25rem', marginBottom: '1.5rem' }}>
           <button
             type="button"
             className={`btn ${aiMode === 'local' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ flex: 1, padding: '0.7rem' }}
+            style={{ flex: 1, padding: '0.85rem', fontSize: '0.95rem' }}
             onClick={() => {
               setAiMode('local');
               setCustomEndpoint('http://localhost:11434/v1/chat/completions');
@@ -307,7 +317,7 @@ export const SettingsView: React.FC = () => {
           <button
             type="button"
             className={`btn ${aiMode === 'cloud' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ flex: 1, padding: '0.7rem' }}
+            style={{ flex: 1, padding: '0.85rem', fontSize: '0.95rem' }}
             onClick={() => {
               setAiMode('cloud');
               if (!customEndpoint || customEndpoint.includes('localhost')) {
@@ -324,9 +334,9 @@ export const SettingsView: React.FC = () => {
 
         {/* Local Model (Ollama) Panel */}
         {aiMode === 'local' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
             <div className="form-group">
-              <label className="form-label">Model Name</label>
+              <label className="form-label" style={{ fontWeight: 600 }}>Model Name</label>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
                   type="text"
@@ -339,7 +349,7 @@ export const SettingsView: React.FC = () => {
                 {localModelsList.length > 0 && (
                   <select
                     className="form-select"
-                    style={{ width: '140px' }}
+                    style={{ width: '160px' }}
                     value={localModelsList.includes(aiModel) ? aiModel : ''}
                     onChange={(e) => {
                       if (e.target.value) setAiModel(e.target.value);
@@ -355,7 +365,7 @@ export const SettingsView: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Base URL / Endpoint</label>
+              <label className="form-label" style={{ fontWeight: 600 }}>Base URL / Endpoint</label>
               <input
                 type="text"
                 className="form-input"
@@ -367,9 +377,9 @@ export const SettingsView: React.FC = () => {
           </div>
         ) : (
           /* Cloud Model Vendor-Agnostic Interface (3 Required Fields: API Key, Base URL, Model Name) */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div className="form-group">
-              <label className="form-label">
+              <label className="form-label" style={{ fontWeight: 600 }}>
                 API Key * {apiKeyInput && <span className="subtitle">({maskApiKey(apiKeyInput)})</span>}
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -392,9 +402,9 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
               <div className="form-group">
-                <label className="form-label">Base URL *</label>
+                <label className="form-label" style={{ fontWeight: 600 }}>Base URL *</label>
                 <input
                   type="text"
                   className="form-input"
@@ -406,7 +416,7 @@ export const SettingsView: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Model Name *</label>
+                <label className="form-label" style={{ fontWeight: 600 }}>Model Name *</label>
                 <input
                   type="text"
                   className="form-input"
@@ -420,18 +430,19 @@ export const SettingsView: React.FC = () => {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.25rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', alignItems: 'center' }}>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={handleTestAIConnection}
             disabled={isTestingConnection}
+            style={{ padding: '0.65rem 1.25rem' }}
           >
             {isTestingConnection ? 'Testing Connection...' : 'Test AI Connection'}
           </button>
           {testResult && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.825rem', color: testResult.success ? '#527653' : 'var(--danger)', fontWeight: 600 }}>
-              {testResult.success ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem', color: testResult.success ? '#527653' : 'var(--danger)', fontWeight: 600 }}>
+              {testResult.success ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
               <span>{testResult.message}</span>
             </div>
           )}
@@ -439,17 +450,19 @@ export const SettingsView: React.FC = () => {
       </div>
 
       {/* Password Security & Profile Preferences */}
-      <div className="glass-card">
-        <h3><KeyRound size={16} /> User Profile & Master Password Security</h3>
-        <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      <div className="liquid-panel flip-card-item">
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <KeyRound size={20} /> User Profile & Master Password Security
+        </h3>
+        <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
             <div className="form-group">
-              <label className="form-label">User Profile Name</label>
+              <label className="form-label" style={{ fontWeight: 600 }}>User Profile Name</label>
               <input type="text" className="form-input" value={userName} onChange={(e) => setUserName(e.target.value)} />
             </div>
 
             <div className="form-group">
-              <label className="form-label">New Master Security Password</label>
+              <label className="form-label" style={{ fontWeight: 600 }}>New Master Security Password</label>
               <input
                 type="password"
                 className="form-input"
@@ -461,8 +474,8 @@ export const SettingsView: React.FC = () => {
           </div>
 
           {settings?.appPassword && appPasswordInput !== settings.appPassword && (
-            <div className="form-group" style={{ maxWidth: '400px' }}>
-              <label className="form-label" style={{ color: 'var(--danger)' }}>Confirm Current Password (Required to update password)</label>
+            <div className="form-group" style={{ maxWidth: '440px' }}>
+              <label className="form-label" style={{ color: 'var(--danger)', fontWeight: 600 }}>Confirm Current Password (Required to update password)</label>
               <input
                 type="password"
                 className="form-input"
@@ -473,29 +486,29 @@ export const SettingsView: React.FC = () => {
             </div>
           )}
 
-          {passwordUpdateError && <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{passwordUpdateError}</span>}
+          {passwordUpdateError && <span style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{passwordUpdateError}</span>}
 
-          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '0.75rem 1.5rem', fontSize: '0.95rem' }}>
             Save Profile & Forest Preferences
           </button>
         </form>
       </div>
 
       {/* Protected Database Administration */}
-      <div className="glass-card" style={{ borderColor: 'rgba(239, 68, 68, 0.4)' }}>
-        <h3 style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <ShieldAlert size={18} /> Password-Protected Database Operations
+      <div className="liquid-panel flip-card-item" style={{ borderColor: 'rgba(239, 68, 68, 0.4)' }}>
+        <h3 style={{ color: 'var(--danger)', fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <ShieldAlert size={20} /> Password-Protected Database Operations
         </h3>
-        <p className="subtitle" style={{ marginTop: '0.25rem' }}>
+        <p className="subtitle" style={{ marginTop: '0.35rem', fontSize: '0.9rem' }}>
           Database extraction and total deletion tasks are protected by master password verification.
         </p>
 
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-          <button className="btn btn-secondary" onClick={() => handleTriggerProtectedAction('export_data')}>
-            <Download size={14} /> Extract Data Backup (JSON)
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.25rem' }}>
+          <button className="btn btn-secondary" onClick={() => handleTriggerProtectedAction('export_data')} style={{ padding: '0.65rem 1.25rem' }}>
+            <Download size={16} /> Extract Data Backup (JSON)
           </button>
-          <button className="btn btn-danger" onClick={() => handleTriggerProtectedAction('clear_db')}>
-            <Trash2 size={14} /> Clear Entire Database
+          <button className="btn btn-danger" onClick={() => handleTriggerProtectedAction('clear_db')} style={{ padding: '0.65rem 1.25rem' }}>
+            <Trash2 size={16} /> Clear Entire Database
           </button>
         </div>
       </div>
@@ -503,12 +516,12 @@ export const SettingsView: React.FC = () => {
       {/* Password Verification Modal */}
       {isPasswordModalOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '420px', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'center' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '1.25rem', textAlign: 'center', padding: '1.75rem' }}>
             <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--danger)' }}>
-              <Lock size={36} />
+              <Lock size={42} />
             </div>
-            <h3>Master Password Verification Required</h3>
-            <p className="subtitle">
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Master Password Verification Required</h3>
+            <p className="subtitle" style={{ fontSize: '0.9rem' }}>
               Enter your master security password to execute: <strong>{pendingAction === 'clear_db' ? 'Clear Entire Database' : 'Extract Data Backup'}</strong>.
             </p>
 
@@ -520,9 +533,9 @@ export const SettingsView: React.FC = () => {
               onChange={(e) => setVerifyPasswordPrompt(e.target.value)}
             />
 
-            {passwordError && <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{passwordError}</span>}
+            {passwordError && <span style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{passwordError}</span>}
 
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
               <button className="btn btn-secondary" onClick={() => setIsPasswordModalOpen(false)}>
                 Cancel
               </button>
@@ -536,4 +549,5 @@ export const SettingsView: React.FC = () => {
     </div>
   );
 };
+
 

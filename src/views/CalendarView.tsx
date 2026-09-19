@@ -33,7 +33,6 @@ export const CalendarView: React.FC = () => {
 
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-  // Filter tasks accurately assigned to this specific selected date
   const selectedTasks = tasks.filter((t) => {
     const isDueOnDate = t.dueDate === selectedDateStr || t.endDate === selectedDateStr;
     const isCompletedOnDate = t.completedAt && t.completedAt.startsWith(selectedDateStr);
@@ -43,50 +42,49 @@ export const CalendarView: React.FC = () => {
   const selectedHabitLogs = habitLogs.filter((l) => l.date === selectedDateStr);
   const completedHabitCount = selectedHabitLogs.filter((l) => l.status === 'completed').length;
   const totalActiveHabits = habits.length || 1;
-  const habitCompletionPct = Math.round((completedHabitCount / totalActiveHabits) * 100);
 
   const completedTaskCount = selectedTasks.filter((t) => t.status === 'completed').length;
-  const taskCompletionPct = selectedTasks.length > 0 ? Math.round((completedTaskCount / selectedTasks.length) * 100) : 100;
 
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
 
   return (
-    <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.25rem' }}>
-      {/* Redesigned Dynamic Calendar Grid */}
-      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="view-container" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem' }}>
+      {/* Calendar Grid Container */}
+      <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.75rem' }}>
+        <div className="view-header" style={{ paddingBottom: 0 }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <CalendarIcon size={20} /> Dynamic Task Scheduling Calendar
-            </h2>
-            <p className="subtitle">Real-time date selection with accurate task and habit completion tracking.</p>
+            <h1 className="view-header-title" style={{ fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <CalendarIcon size={24} style={{ color: 'var(--accent-secondary)' }} /> Task & Habit Calendar
+            </h1>
+            <p className="view-header-subtitle">
+              Visual monthly schedule with date selection and completion tracking.
+            </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button className="btn btn-secondary btn-icon btn-xs" onClick={prevMonth}>
-              <ChevronLeft size={16} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button className="btn btn-secondary btn-icon" onClick={prevMonth}>
+              <ChevronLeft size={18} />
             </button>
-            <strong style={{ fontSize: '0.95rem', minWidth: '130px', textAlign: 'center' }}>
+            <strong style={{ fontSize: '1.1rem', minWidth: '150px', textAlign: 'center', color: 'var(--text-primary)' }}>
               {format(currentMonth, 'MMMM yyyy')}
             </strong>
-            <button className="btn btn-secondary btn-icon btn-xs" onClick={nextMonth}>
-              <ChevronRight size={16} />
+            <button className="btn btn-secondary btn-icon" onClick={nextMonth}>
+              <ChevronRight size={18} />
             </button>
           </div>
         </div>
 
         {/* Days of Week Header */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.35rem', textAlign: 'center', fontWeight: 600, fontSize: '0.775rem', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', textAlign: 'center', fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
           <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
         </div>
 
         {/* Month Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.35rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
           {days.map((day) => {
             const dateStr = format(day, 'yyyy-MM-dd');
 
-            // Accurate Work Filter for Cell
             const dayTasks = tasks.filter((t) => t.dueDate === dateStr || t.endDate === dateStr);
             const dayHabitLogs = habitLogs.filter((l) => l.date === dateStr && l.status === 'completed');
 
@@ -98,30 +96,30 @@ export const CalendarView: React.FC = () => {
                 key={dateStr}
                 onClick={() => setSelectedDate(day)}
                 style={{
-                  minHeight: '85px',
-                  padding: '0.4rem',
+                  minHeight: '105px',
+                  padding: '0.6rem',
                   borderRadius: 'var(--radius-md)',
-                  background: isSelected ? 'var(--bg-elevated)' : isCurrentMonthDay ? 'var(--bg-primary)' : 'rgba(0,0,0,0.15)',
-                  border: isSelected ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                  background: isSelected ? 'rgba(46, 94, 68, 0.4)' : isCurrentMonthDay ? 'rgba(13, 34, 26, 0.7)' : 'rgba(0,0,0,0.15)',
+                  border: isSelected ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
                   opacity: isCurrentMonthDay ? 1 : 0.35,
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.25rem',
-                  transition: 'all 0.16s ease',
+                  gap: '0.35rem',
+                  transition: 'all 200ms ease',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                     {format(day, 'd')}
                   </span>
                   {dayHabitLogs.length > 0 && (
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }} />
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-secondary)' }} />
                   )}
                 </div>
 
                 {dayTasks.length > 0 && (
-                  <span style={{ fontSize: '0.675rem', background: 'var(--bg-secondary)', padding: '0.1rem 0.35rem', borderRadius: '3px', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span style={{ fontSize: '0.725rem', background: 'rgba(20, 47, 36, 0.9)', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {dayTasks.length} task(s)
                   </span>
                 )}
@@ -131,44 +129,45 @@ export const CalendarView: React.FC = () => {
         </div>
       </div>
 
-      {/* Selected Date Comprehensive Daily Dashboard */}
-      <aside className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-          <h3 style={{ fontSize: '1.05rem', margin: 0 }}>Daily Dashboard</h3>
-          <span className="subtitle">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+      {/* Selected Date Side Dashboard */}
+      <aside className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem' }}>
+        <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.85rem' }}>
+          <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Date Breakdown</h3>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
         </div>
 
         {/* Analytics Card Summary for Date */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-          <div style={{ background: 'var(--bg-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>HABITS DONE</span>
-            <strong style={{ display: 'block', fontSize: '1.1rem' }}>{completedHabitCount} / {totalActiveHabits}</strong>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>HABITS LOGGED</span>
+            <strong style={{ display: 'block', fontSize: '1.35rem', color: 'var(--accent-secondary)', marginTop: '0.2rem' }}>
+              {completedHabitCount} / {totalActiveHabits}
+            </strong>
           </div>
 
-          <div style={{ background: 'var(--bg-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>TASKS DONE</span>
-            <strong style={{ display: 'block', fontSize: '1.1rem' }}>{completedTaskCount} / {selectedTasks.length}</strong>
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>TASKS COMPLETED</span>
+            <strong style={{ display: 'block', fontSize: '1.35rem', color: 'var(--text-primary)', marginTop: '0.2rem' }}>
+              {completedTaskCount} / {selectedTasks.length}
+            </strong>
           </div>
         </div>
 
         {/* Tasks Assigned to Date */}
         <div>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <CheckSquare size={14} /> Scheduled Tasks ({selectedTasks.length})
+          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+            <CheckSquare size={16} style={{ color: 'var(--warning)' }} /> Scheduled Tasks ({selectedTasks.length})
           </h4>
           {selectedTasks.length === 0 ? (
-            <p className="subtitle">No tasks scheduled for this date.</p>
+            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>No tasks scheduled for this date.</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
               {selectedTasks.map((t) => (
-                <div key={t.id} style={{ padding: '0.5rem 0.65rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
+                <div key={t.id} style={{ padding: '0.65rem 0.85rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ textDecoration: t.status === 'completed' ? 'line-through' : 'none' }}>{t.title}</strong>
-                    <span className="subtitle" style={{ fontSize: '0.675rem', fontWeight: 600 }}>{t.priority.toUpperCase()}</span>
+                    <strong style={{ color: 'var(--text-primary)', textDecoration: t.status === 'completed' ? 'line-through' : 'none' }}>{t.title}</strong>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase' }}>{t.priority}</span>
                   </div>
-                  {t.dailyTimeLimitMinutes && (
-                    <div className="subtitle" style={{ fontSize: '0.7rem', marginTop: '0.15rem' }}>Daily Limit: {t.dailyTimeLimitMinutes / 60}h</div>
-                  )}
                 </div>
               ))}
             </div>
@@ -177,19 +176,19 @@ export const CalendarView: React.FC = () => {
 
         {/* Habits Checked for Date */}
         <div>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <Activity size={14} /> Habit Logs ({selectedHabitLogs.length})
+          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+            <Activity size={16} style={{ color: 'var(--accent-secondary)' }} /> Habit Logs ({selectedHabitLogs.length})
           </h4>
           {selectedHabitLogs.length === 0 ? (
-            <p className="subtitle">No habit check-ins recorded for this date.</p>
+            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>No habit check-ins recorded for this date.</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
               {selectedHabitLogs.map((l) => {
                 const habit = habits.find((h) => h.id === l.habitId);
                 return (
-                  <div key={l.id} style={{ padding: '0.4rem 0.6rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{habit?.name || 'Habit Routine'}</span>
-                    <strong style={{ textTransform: 'capitalize' }}>{l.status}</strong>
+                  <div key={l.id} style={{ padding: '0.55rem 0.75rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-primary)' }}>{habit?.name || 'Habit Routine'}</span>
+                    <strong style={{ textTransform: 'capitalize', color: 'var(--accent-secondary)' }}>{l.status}</strong>
                   </div>
                 );
               })}
@@ -197,21 +196,22 @@ export const CalendarView: React.FC = () => {
           )}
         </div>
 
-        {/* End-of-Day Review Summary for Date */}
+        {/* End-of-Day Review Summary */}
         <div>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <BookOpen size={14} /> Daily Review & Reflection
+          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+            <BookOpen size={16} style={{ color: 'var(--text-secondary)' }} /> Daily Review Reflection
           </h4>
           {dailyReview ? (
-            <div style={{ padding: '0.55rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
-              <div>Score Rating: <strong>{dailyReview.rating || 5} Stars</strong></div>
-              {dailyReview.accomplished && <div className="subtitle" style={{ marginTop: '0.25rem' }}>Wins: {dailyReview.accomplished}</div>}
+            <div style={{ padding: '0.75rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
+              <div>Score Rating: <strong style={{ color: 'var(--accent-secondary)' }}>{dailyReview.rating || 5} / 5 Stars</strong></div>
+              {dailyReview.accomplished && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', margin: 0 }}>Wins: {dailyReview.accomplished}</p>}
             </div>
           ) : (
-            <p className="subtitle">No daily review entry for this date.</p>
+            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>No daily review entry recorded.</p>
           )}
         </div>
       </aside>
     </div>
   );
 };
+

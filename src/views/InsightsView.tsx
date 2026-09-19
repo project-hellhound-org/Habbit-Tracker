@@ -194,102 +194,117 @@ export const InsightsView: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '260px 1fr', gap: '1.25rem', height: 'calc(100vh - var(--header-height) - 1.5rem)' }}>
-      <aside className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', padding: '1rem', minHeight: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3>AI Analyst</h3>
-          <button className="btn btn-primary btn-xs" onClick={handleCreateNewConversation}>
-            <Plus size={14} /> New Chat
-          </button>
+    <div className="view-container">
+      <div className="view-header">
+        <div>
+          <h1 className="view-header-title">Smart AI Engine</h1>
+          <p className="view-header-subtitle">
+            Interact with your personalized productivity copilot for habit pattern recognition, workload optimization, and focus metrics.
+          </p>
         </div>
+      </div>
 
-        <input
-          type="text"
-          className="form-input"
-          style={{ fontSize: '0.775rem' }}
-          placeholder="Search chats..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', flex: 1 }}>
-          {filteredConversations.map((c) => (
-            <div
-              key={c.id}
-              onClick={() => setActiveConvId(c.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.5rem 0.65rem',
-                borderRadius: 'var(--radius-sm)',
-                background: activeConvId === c.id ? 'var(--bg-elevated)' : 'var(--bg-secondary)',
-                border: '1px solid var(--border-color)',
-                cursor: 'pointer',
-                fontSize: '0.8rem',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <MessageSquare size={14} />
-              <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</span>
-              <button className="btn btn-danger btn-icon btn-xs" onClick={(e) => handleDeleteConversation(c.id, e)}>
-                <Trash2 size={12} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </aside>
-
-      <main className="glass-card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', minWidth: 0, minHeight: 0 }}>
-        <div style={{ display: 'flex', gap: '0.5rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', overflowX: 'auto' }}>
-          <span className="subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap', fontWeight: 700 }}>
-            <Sparkles size={14} /> Quick Analysis:
-          </span>
-          {quickPrompts.map((p) => (
-            <button key={p} className="btn btn-secondary btn-xs" onClick={() => handleSendMessage(p)} style={{ whiteSpace: 'nowrap' }}>
-              {p}
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1.25rem', height: 'calc(100vh - var(--header-height) - 180px)' }}>
+        <aside className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', padding: '1.25rem', minHeight: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>AI Conversations</h3>
+            <button className="btn btn-primary btn-xs" onClick={handleCreateNewConversation}>
+              <Plus size={14} /> New Chat
             </button>
-          ))}
-        </div>
+          </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {activeMessages.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', gap: '0.5rem' }}>
-              <Sparkles size={36} />
-              <h3>Personal AI Productivity Analyst</h3>
-              <p>Ask questions about your habits, tasks, focus efficiency, and daily performance metrics.</p>
-            </div>
-          ) : (
-            activeMessages.map((msg) => (
-              <div key={msg.id} style={{ display: 'flex', gap: '0.75rem', alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {msg.sender === 'user' ? <User size={14} /> : <Bot size={14} />}
-                </div>
-                <div style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-secondary)', color: msg.sender === 'user' ? 'var(--bg-primary)' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
-                  {msg.text}
-                </div>
-              </div>
-            ))
-          )}
-          {isLoading && <span className="subtitle">Analyzing productivity data...</span>}
-          <div ref={chatEndRef} />
-        </div>
-
-        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
           <input
             type="text"
             className="form-input"
-            style={{ flex: 1 }}
-            placeholder="Ask AI about habits, tasks, focus efficiency..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            disabled={isLoading}
+            style={{ fontSize: '0.825rem' }}
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button type="submit" className="btn btn-primary" disabled={isLoading || !inputMessage.trim()}>
-            <Send size={16} /> Send
-          </button>
-        </form>
-      </main>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto', flex: 1 }}>
+            {filteredConversations.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => setActiveConvId(c.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.6rem 0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  background: activeConvId === c.id ? 'var(--bg-elevated)' : 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  color: 'var(--text-primary)',
+                  transition: 'var(--transition-fast)',
+                }}
+              >
+                <MessageSquare size={14} style={{ color: activeConvId === c.id ? 'var(--accent-secondary)' : 'var(--text-muted)' }} />
+                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: activeConvId === c.id ? 600 : 400 }}>{c.title}</span>
+                <button className="btn btn-danger btn-icon btn-xs" onClick={(e) => handleDeleteConversation(c.id, e)}>
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        <main className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', padding: '1.25rem', minWidth: 0, minHeight: 0 }}>
+          <div style={{ display: 'flex', gap: '0.5rem', paddingBottom: '0.85rem', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', alignItems: 'center' }}>
+            <span className="subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', fontWeight: 700, color: 'var(--accent-secondary)' }}>
+              <Sparkles size={16} /> Quick Analysis:
+            </span>
+            {quickPrompts.map((p) => (
+              <button key={p} className="btn btn-secondary btn-xs" onClick={() => handleSendMessage(p)} style={{ whiteSpace: 'nowrap' }}>
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {activeMessages.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', gap: '0.75rem', textAlign: 'center' }}>
+                <Sparkles size={42} style={{ color: 'var(--accent-secondary)' }} />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>Personal AI Productivity Analyst</h3>
+                <p style={{ maxWidth: '480px', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                  Ask questions about your habit streak records, pending high-priority tasks, focus efficiency, and daily journal mood trends.
+                </p>
+              </div>
+            ) : (
+              activeMessages.map((msg) => (
+                <div key={msg.id} style={{ display: 'flex', gap: '0.75rem', alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {msg.sender === 'user' ? <User size={16} style={{ color: 'var(--bg-primary)' }} /> : <Bot size={16} style={{ color: 'var(--accent-secondary)' }} />}
+                  </div>
+                  <div style={{ padding: '0.85rem 1.1rem', borderRadius: 'var(--radius-md)', background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-secondary)', color: msg.sender === 'user' ? 'var(--bg-primary)' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.9rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', boxShadow: 'var(--shadow-sm)' }}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))
+            )}
+            {isLoading && <span className="subtitle" style={{ fontStyle: 'italic' }}>Analyzing productivity data...</span>}
+            <div ref={chatEndRef} />
+          </div>
+
+          <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border-color)' }}>
+            <input
+              type="text"
+              className="form-input"
+              style={{ flex: 1, fontSize: '0.9rem', padding: '0.65rem 1rem' }}
+              placeholder="Ask AI about habits, tasks, focus efficiency..."
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              disabled={isLoading}
+            />
+            <button type="submit" className="btn btn-primary" disabled={isLoading || !inputMessage.trim()} style={{ padding: '0.65rem 1.25rem' }}>
+              <Send size={16} /> Send
+            </button>
+          </form>
+        </main>
+      </div>
     </div>
   );
 };
+

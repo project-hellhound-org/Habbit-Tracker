@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DailySnapshotData } from '../db/schema';
 import { calculateCurrentStreak } from '../engine/streakEngine';
-import { BookOpen, Save, Star, Camera, CheckSquare, Activity, AlertTriangle, ShieldCheck, Flame } from 'lucide-react';
+import { BookOpen, Save, Star, Camera, CheckSquare, Activity, AlertTriangle, ShieldCheck, Flame, Award } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const JournalView: React.FC = () => {
@@ -42,7 +42,6 @@ export const JournalView: React.FC = () => {
     (t) => t.status === 'planned' || t.status === 'remaining' || t.status === 'todo' || t.status === 'in_progress'
   ).length;
 
-  // Dynamic Time Logged (Total minutes from today's completed tasks)
   const timeLoggedMins = tasks
     .filter((t) => t.status === 'completed' && t.completedAt?.startsWith(todayStr))
     .reduce((sum, t) => sum + (t.completionTimeMinutes || 45), 0) || (completedHabitsCount * 30 + completedTasksToday * 40);
@@ -50,7 +49,6 @@ export const JournalView: React.FC = () => {
   const loggedMins = timeLoggedMins % 60;
   const timeLoggedStr = loggedHours > 0 || loggedMins > 0 ? `${loggedHours}h ${loggedMins}m` : '0h 0m';
 
-  // Dynamic Productivity Score & Focus Efficiency
   const dynamicScoreVal = habits.length === 0 && tasks.length === 0 ? 82 : Math.min(100, Math.round(habitCompletionPct * 0.5 + taskCompletionPct * 0.5));
   const productivityScoreStr = `${dynamicScoreVal}/100`;
 
@@ -63,7 +61,6 @@ export const JournalView: React.FC = () => {
   const streakDays = calculateCurrentStreak(allHabitLogs, tasks);
   const streakStr = `${streakDays} days`;
 
-  // Real-Time Analytical Snapshot Assembly
   const dynamicSnapshot: DailySnapshotData = {
     productivityScore: productivityScoreStr,
     habitCompletion: habitCompletionRatioStr,
@@ -99,131 +96,121 @@ export const JournalView: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="view-container">
+      {/* Header Bar */}
+      <div className="view-header">
         <div>
-          <h2>Daily Review & End-of-Day Snapshots ({todayStr})</h2>
-          <p className="subtitle">Structured end-of-day performance audits, accomplishments, and metrics reporting.</p>
+          <h1 className="view-header-title">Daily Review & Performance Snapshots</h1>
+          <p className="view-header-subtitle">
+            End-of-day performance audits, accomplishments, and automated metrics report for {todayStr}.
+          </p>
         </div>
       </div>
 
-      {/* End-of-Day Snapshot Report Showcase Card */}
-      <div className="glass-card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.05rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Camera size={18} /> End-of-Day Performance Snapshot Report
+      {/* Snapshot Showcase Card */}
+      <div className="liquid-panel flip-card-item" style={{ padding: '1.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--text-primary)' }}>
+            <Camera size={22} style={{ color: 'var(--accent-secondary)' }} /> Performance Snapshot Report
           </h3>
-          <span className="subtitle" style={{ fontWeight: 700 }}>Score: {dynamicSnapshot.productivityScore}</span>
+          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', background: 'rgba(82, 118, 83, 0.25)', padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            Productivity Score: {dynamicSnapshot.productivityScore}
+          </span>
         </div>
 
         {/* Snapshot Metric Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
-          <div style={{ background: 'var(--bg-primary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>PRODUCTIVITY SCORE</span>
-            <strong style={{ display: 'block', fontSize: '1.25rem', marginTop: '0.2rem' }}>{dynamicSnapshot.productivityScore}</strong>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.9rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>PRODUCTIVITY SCORE</span>
+            <strong style={{ display: 'block', fontSize: '1.5rem', marginTop: '0.2rem', color: 'var(--accent-secondary)' }}>{dynamicSnapshot.productivityScore}</strong>
           </div>
 
-          <div style={{ background: 'var(--bg-primary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>HABIT COMPLETION</span>
-            <strong style={{ display: 'block', fontSize: '1.25rem', marginTop: '0.2rem' }}>{dynamicSnapshot.habitCompletion}</strong>
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.9rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>HABIT LOGS</span>
+            <strong style={{ display: 'block', fontSize: '1.5rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>{dynamicSnapshot.habitCompletion}</strong>
           </div>
 
-          <div style={{ background: 'var(--bg-primary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>TASK COMPLETION</span>
-            <strong style={{ display: 'block', fontSize: '1.25rem', marginTop: '0.2rem' }}>{dynamicSnapshot.taskCompletion}</strong>
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.9rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>TASKS COMPLETED</span>
+            <strong style={{ display: 'block', fontSize: '1.5rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>{dynamicSnapshot.taskCompletion}</strong>
           </div>
 
-          <div style={{ background: 'var(--bg-primary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>TIME LOGGED</span>
-            <strong style={{ display: 'block', fontSize: '1.25rem', marginTop: '0.2rem' }}>{dynamicSnapshot.timeLogged}</strong>
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.9rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>TIME LOGGED</span>
+            <strong style={{ display: 'block', fontSize: '1.5rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>{dynamicSnapshot.timeLogged}</strong>
           </div>
 
-          <div style={{ background: 'var(--bg-primary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>FOCUS EFFICIENCY</span>
-            <strong style={{ display: 'block', fontSize: '1.25rem', marginTop: '0.2rem' }}>{dynamicSnapshot.focusEfficiency}</strong>
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.9rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>FOCUS EFFICIENCY</span>
+            <strong style={{ display: 'block', fontSize: '1.5rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>{dynamicSnapshot.focusEfficiency}</strong>
           </div>
 
-          <div style={{ background: 'var(--bg-primary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>GOALS PROGRESS</span>
-            <strong style={{ display: 'block', fontSize: '1.25rem', marginTop: '0.2rem' }}>{dynamicSnapshot.goalsProgress}</strong>
-          </div>
-
-          <div style={{ background: 'var(--bg-primary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>OVERDUE TASKS</span>
-            <strong style={{ display: 'block', fontSize: '1.25rem', marginTop: '0.2rem', color: 'var(--danger)' }}>{dynamicSnapshot.overdueTasks}</strong>
-          </div>
-
-          <div style={{ background: 'var(--bg-primary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <span className="subtitle" style={{ fontSize: '0.7rem' }}>CURRENT STREAK</span>
-            <strong style={{ display: 'block', fontSize: '1.25rem', marginTop: '0.2rem' }}>{dynamicSnapshot.currentStreak}</strong>
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.9rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>OVERDUE TASKS</span>
+            <strong style={{ display: 'block', fontSize: '1.5rem', marginTop: '0.2rem', color: overdueTasksCount > 0 ? 'var(--danger)' : 'var(--accent-secondary)' }}>{dynamicSnapshot.overdueTasks}</strong>
           </div>
         </div>
 
-        {/* Task & Work Review Statistics Table */}
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.85rem' }}>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>Task & Work Review Statistics</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>
-            <div style={{ padding: '0.5rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)' }}>
-              <span className="subtitle" style={{ display: 'block', fontSize: '0.675rem' }}>PLANNED</span>
-              <strong>{dynamicSnapshot.taskReviewStats.planned}</strong>
+        {/* Task Review Breakdown Statistics Table */}
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
+          <h4 style={{ fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.85rem', fontWeight: 700 }}>Task Review Breakdown</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', textAlign: 'center' }}>
+            <div style={{ padding: '0.75rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>PLANNED</span>
+              <strong style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>{dynamicSnapshot.taskReviewStats.planned}</strong>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)' }}>
-              <span className="subtitle" style={{ display: 'block', fontSize: '0.675rem' }}>COMPLETED</span>
-              <strong>{dynamicSnapshot.taskReviewStats.completed}</strong>
+            <div style={{ padding: '0.75rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>COMPLETED</span>
+              <strong style={{ fontSize: '1.2rem', color: 'var(--accent-secondary)' }}>{dynamicSnapshot.taskReviewStats.completed}</strong>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)' }}>
-              <span className="subtitle" style={{ display: 'block', fontSize: '0.675rem' }}>REMAINING</span>
-              <strong>{dynamicSnapshot.taskReviewStats.remaining}</strong>
+            <div style={{ padding: '0.75rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>REMAINING</span>
+              <strong style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>{dynamicSnapshot.taskReviewStats.remaining}</strong>
             </div>
-            <div style={{ padding: '0.5rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)' }}>
-              <span className="subtitle" style={{ display: 'block', fontSize: '0.675rem' }}>OVERDUE</span>
-              <strong style={{ color: 'var(--danger)' }}>{dynamicSnapshot.taskReviewStats.overdue}</strong>
-            </div>
-            <div style={{ padding: '0.5rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)' }}>
-              <span className="subtitle" style={{ display: 'block', fontSize: '0.675rem' }}>CANCELLED</span>
-              <strong>{dynamicSnapshot.taskReviewStats.cancelled}</strong>
-            </div>
-            <div style={{ padding: '0.5rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)' }}>
-              <span className="subtitle" style={{ display: 'block', fontSize: '0.675rem' }}>DEFERRED</span>
-              <strong>{dynamicSnapshot.taskReviewStats.deferred}</strong>
+            <div style={{ padding: '0.75rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>OVERDUE</span>
+              <strong style={{ fontSize: '1.2rem', color: 'var(--danger)' }}>{dynamicSnapshot.taskReviewStats.overdue}</strong>
             </div>
           </div>
         </div>
       </div>
 
       {/* Review Input Form */}
-      <form onSubmit={handleSaveReview} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <form onSubmit={handleSaveReview} className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem' }}>
         <div className="form-group">
-          <label className="form-label">Overall Daily Execution Score (1 to 5 Stars)</label>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <label className="form-label" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Overall Daily Execution Score Rating</label>
+          <div style={{ display: 'flex', gap: '0.65rem' }}>
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
                 type="button"
-                className={`btn btn-xs ${rating >= star ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn ${rating >= star ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '0.55rem 1rem' }}
                 onClick={() => setRating(star)}
               >
-                <Star size={14} fill={rating >= star ? 'currentColor' : 'none'} /> {star}
+                <Star size={16} fill={rating >= star ? 'currentColor' : 'none'} /> {star} {star === 1 ? 'Star' : 'Stars'}
               </button>
             ))}
           </div>
         </div>
 
         <div className="form-group">
-          <label className="form-label">Unified Daily Review & Reflections</label>
+          <label className="form-label" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Unified Daily Reflections & Wins</label>
           <textarea
             className="form-textarea"
-            rows={5}
+            rows={6}
             value={unifiedReviewNotes}
             onChange={(e) => setUnifiedReviewNotes(e.target.value)}
-            placeholder="Record your daily reflection, accomplishments, blockers, and carry-forward actions for tomorrow..."
+            placeholder="Record your daily reflection, key accomplishments, blockers encountered, and carry-forward objectives for tomorrow..."
+            style={{ fontSize: '0.925rem', lineHeight: 1.6 }}
           />
         </div>
 
-        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-          <Save size={14} /> Save Reflection & Snapshot
+        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '0.75rem 1.5rem' }}>
+          <Save size={16} /> Save Daily Reflection & Report
         </button>
       </form>
     </div>
   );
 };
+
