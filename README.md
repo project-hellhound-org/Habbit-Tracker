@@ -1,142 +1,124 @@
-# Habit OS — Personal Productivity & Habit Operating System
+# Habit OS — Enterprise Habit & Productivity Operating System
 
 ![Habit OS Banner](assets/banner.png)
 
 <p align="center">
   <img src="public/icon.png" width="96" alt="Habit OS Logo" /><br>
-  <b>A Minimal Ink, Local-First, High-Precision Productivity Workstation & Habit Operating System</b><br>
-  Built with React, Vite, TypeScript, Dexie IndexedDB, and Electron Desktop Runtime.
+  <b>An Enterprise-Grade, Local-First Productivity Workstation & AI Copilot System</b><br>
+  Built with React 18, TypeScript 5, Vite, Dexie.js (IndexedDB), and Electron.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Windows%20%7C%20macOS-000000?style=for-the-badge&logo=electron&logoColor=white" alt="Platforms" />
-  <img src="https://img.shields.io/badge/Execution-Terminal%20Direct%20Launcher-000000?style=for-the-badge&logo=gnu-bash&logoColor=white" alt="Terminal Launcher" />
-  <img src="https://img.shields.io/badge/Storage-Local--First%20IndexedDB-000000?style=for-the-badge&logo=sqlite&logoColor=white" alt="Local First" />
-  <img src="https://img.shields.io/badge/AI-Ollama%20%7C%20NVIDIA%20%7C%20OpenAI%20%7C%20Claude%20%7C%20Gemini%20%7C%20OpenRouter-000000?style=for-the-badge&logo=ollama&logoColor=white" alt="AI Model Integration" />
+  <img src="https://img.shields.io/badge/Status-Production%20Ready-2F8F5B?style=for-the-badge&logo=github" alt="Production Ready" />
+  <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Windows%20%7C%20macOS-163A29?style=for-the-badge&logo=electron&logoColor=white" alt="Platforms" />
+  <img src="https://img.shields.io/badge/Execution-CLI%20Launcher%20%7C%20GUI-071A13?style=for-the-badge&logo=gnu-bash&logoColor=white" alt="Launcher" />
+  <img src="https://img.shields.io/badge/Theme-Rain%20Forest%20%7C%20Foggy%20Mist-57B978?style=for-the-badge&logo=tree&logoColor=white" alt="Environmental Themes" />
+  <img src="https://img.shields.io/badge/AI Engine-Zero--Latency%20Local%20%26%20Cloud-2F8F5B?style=for-the-badge&logo=cpu&logoColor=white" alt="AI Engine" />
+  <img src="https://img.shields.io/badge/License-MIT-0B261B?style=for-the-badge" alt="MIT License" />
 </p>
 
 ---
 
-## 🌟 Overview
+## 🌟 Executive Summary
 
-**Habit OS** is an advanced, privacy-conscious productivity workstation engineered for professionals, software developers, and research technicians who require high-density habit tracking, task scheduling, daily reviews, and AI analytical copiloting without cloud vendor lock-in or visual distraction.
-
-Designed around the **Minimal Ink** philosophy, every component uses monochromatic high-contrast visual tokens (`#F7F7F5` light mode / `#0A0A0A` dark mode), 1px structural borders, centralized motion tokens, and GPU-friendly smooth micro-interactions.
+**Habit OS** is an enterprise-grade, privacy-first habit operating system and productivity workstation designed for professionals, engineers, and researchers. It combines high-density habit tracking, timeline task scheduling, real-time productivity analytics, daily journal reviews, and zero-latency AI analytical copiloting in a distraction-free environment.
 
 ---
 
-## 🚀 Key Features & Architectural Enhancements
+## 🌲 Environmental Design System
 
-### 1. 📊 Habit Creation & Scheduling Engine
-- **End Date Support**: Define timeline boundaries and completion targets.
-- **Flexible Scheduling**: Set custom start and end time windows (`09:00` → `17:00`).
-- **Post-Creation Habit Editing**: Edit habit parameters, schedules, and categories at any time.
-- **Restricted Categories**: *Fitness & Health*, *Learning & Growth*, *Work & Projects*.
-- **Mini Scheduling Calendar**: Integrated timeline view inside habit creation & editing modals.
+Habit OS features two custom-engineered, multi-layered environmental themes that separate visual depth from UI usability:
 
-### 2. 🎯 Task Specification & Scheduling Column
-- **Schedule Window Column**: Dedicated Start Date/Time and End Date/Time selection column.
-- **Daily Time Allocation Limits**: Cap daily task execution hours per day.
-- **Completion Time (Duration)**: Specify task duration in hours and minutes for real-time workload estimation.
+### 1. 🌿 Rain Forest — Deep, Lush & Living
+* **Visual Direction**: A dense tropical rainforest immediately following rainfall. Deep emerald floor (`#071A13`), wet leaves reflecting soft light, subtle rain droplets, humid depth, and sunlight filtering through the canopy.
+* **Architecture**: 6-layer background system containing base foundation, blurred background foliage, canopy shapes, animated sunlight drift, rain droplets, and foreground leaf silhouettes with spring-like easing.
+* **Glass UI**: Semi-transparent forest glass (`rgba(13, 42, 29, 0.72)`) with `backdrop-filter: blur(18px)` and `1px solid rgba(141, 217, 160, 0.10)` borders.
 
-### 3. 📅 Dynamic Task Scheduling Calendar
-- Replaced static calendar grid with a real-time dynamic date selector.
-- Click any date to instantly open a comprehensive daily dashboard summarizing tasks, scheduled habits, reviews, and analytics for that specific day.
+### 2. 🌫️ Foggy Mist Forest — Quiet, Cold & Atmospheric
+* **Visual Direction**: Early morning mountain forest surrounded by heavy mist and wet ground. Cooler, desaturated gray-green palette (`#111A18` base / `#536F61` forest green / `#A8B8B1` mist).
+* **Architecture**: Atmospheric depth perspective with asynchronous slow-moving fog layers (35s, 50s, 75s animation cycles) and micro moisture particles (`1–3px`).
 
-### 4. 🔥 Dynamic 0–100% Streak Flame Engine & Fix
-- **Accurate Consecutive Streak Calculation**: Computes real-time consecutive historical calendar days with completed habits/tasks (e.g., logging 5 days = 5-day streak).
-- **Interpolated Flame System**: 
-  - `0–25%`: Cool Gray Ember
-  - `50%`: Active Yellow Ember
-  - `75%`: Active Orange Flame
-  - `100%`: Deep-Red High-Fidelity Sustained Flame with layered bloom and micro-particles.
-
-### 5. 📷 Real-Time Analytical Daily Review Snapshots
-- Replaced hard-coded review data with **real-time dynamic database calculations**:
-  - **Productivity Score**: Computed score (e.g., `82/100`).
-  - **Habit Completion**: Real-time ratio (e.g., `8/10`).
-  - **Task Completion**: Real-time ratio (e.g., `7/9`).
-  - **Time Logged**: Total task execution time (e.g., `5h 24m`).
-  - **Focus Efficiency**: Real-time performance ratio (e.g., `87%`).
-  - **Goals Progress**: Real-time active goal progress (e.g., `3/4`).
-  - **Overdue Tasks**: Count of uncompleted tasks past schedule end date.
-- **Task & Work Review Statistics Audit**: Real-time audit table tracking items by *Planned*, *Completed*, *Remaining*, *Overdue*, *Cancelled*, and *Deferred*.
-
-### 6. 🤖 Multi-Provider AI Integration (Bounty Hunter Key Logic)
-- **Automatic Provider Detection**: Automatically detects AI providers based on API key structure (Bounty Hunter pattern):
-  - `sk-ant-` → Anthropic Claude
-  - `nvapi-` → NVIDIA NIM (Llama 3.1 70B)
-  - `AIza` → Google Gemini
-  - `sk-or-` → OpenRouter (Cloud Open-Source Models)
-  - `sk-` → OpenAI (GPT-4o)
-  - `ollama` / Empty → Ollama Local Base Server (`http://localhost:11434`)
-- **Seamless Local & Cloud Models**: Switch between local offline Ollama models and open-source cloud models via API key configuration.
+Both environments support real-time 3-second cubic-bezier transitions (`cubic-bezier(0.22, 1, 0.36, 1)`), animation toggle controls, and `@media (prefers-reduced-motion: reduce)` accessibility compliance.
 
 ---
 
-## ⚡ Direct Terminal Execution (`Habit`)
+## 🚀 Core Platform Features
 
-You can launch Habit OS directly from your command-line interface without using a web browser or localhost URLs:
+### 📊 Habit & Task Management Engine
+* **Precision Scheduling**: Set explicit start/end dates, daily execution time windows, and completion durations.
+* **Categorization & Filtering**: Organize by *Fitness & Health*, *Learning & Growth*, or *Work & Projects*.
+* **Dynamic Calendar Timeline**: Real-time date selector mapping tasks, habits, and daily reviews across historical and future days.
+* **0–100% Streak Flame System**: Calculates consecutive completion days with 4-tier visual flame progression (Cool Ember → Yellow → Orange → Sustained Deep Red Flame).
+* **Streak Freeze Security**: Maintain 5 consecutive completion days to earn a Streak Freeze, protecting your streak count from single-day lapses.
+
+### 🤖 High-Speed, Zero-Latency AI Copilot Engine
+* **Disabled Thinking/Reasoning Latency**: All reasoning/thinking loops are disabled across local and cloud providers, enforcing immediate 3–10s response generation.
+* **Local AI Integration (Ollama)**: Full offline support for local models (`llama3.1`, `qwen2.5`, `mistral`, etc.) running on `http://localhost:11434`.
+* **Vendor-Agnostic Cloud Interface**: Standardized 3-field setup (**API Key**, **Base URL**, **Model Name**) compatible with any OpenAI-compatible API endpoint.
+* **Automated Connection Testing**: Built-in verification utility in Settings to validate credentials and endpoint responsiveness prior to activation.
+
+---
+
+## ⚡ Direct Executable Launchers
+
+Habit OS can be launched seamlessly via command-line or desktop launcher:
 
 ```bash
-# Type Habit anywhere in your terminal to launch the program directly
+# Launch Habit OS directly from any terminal prompt
 Habit
 ```
 
-The installer registers `Habit` inside your system executable path (`~/.local/bin/Habit`).
+The setup system automatically creates launcher symlinks in `~/.local/bin/Habit` and `/usr/local/bin/Habit`.
 
 ---
 
-## 💻 Modular Setup & Maintenance Scripts
+## 🛠️ Automated Setup & Script Toolkit
 
-Habit OS features a modular shell script toolkit (Bounty Hunter pattern) for streamlined installation, updates, diagnostics, and cleanup:
+Habit OS includes a suite of maintenance shell and Python scripts:
 
-```bash
-# 🛠️ Installation & System Initialization
-./install.sh
+| Script | Command | Purpose |
+| :--- | :--- | :--- |
+| **Installer** | `./install.sh` | Validates prerequisites, installs dependencies, compiles bundle, and links CLI launcher |
+| **Updater** | `./update.sh` | Synchronizes git remote, updates packages, rebuilds bundle, and verifies launcher |
+| **Diagnostics** | `./doctor.sh` | Runs deep audit on Node.js, Python, TypeScript compilation, security vulnerabilities, and AI endpoints |
+| **Validator** | `python3 validate_env.py` | Programmatically verifies environment versions, build readiness, and local services |
+| **Uninstaller** | `./uninstall.sh` | Safely removes executable symlinks and clears build artifacts |
 
-# 🏥 System Health & Diagnostic Audit
-./doctor.sh
-
-# 🔄 Repository Update & Rebuild
-./update.sh
-
-# 🧹 Clean Uninstallation & Artifact Cleanup
-./uninstall.sh
-```
-
-### Method 1: Single Command Automated Setup (Recommended)
+### Quick Start Installation
 
 ```bash
-# 1. Clone the repository
+# 1. Clone repository
 git clone https://github.com/project-hellhound-org/Habbit-Tracker.git
 cd Habbit-Tracker
 
-# 2. Run automated modular installation
+# 2. Run automated installer
+chmod +x install.sh
 ./install.sh
 ```
 
-### Method 2: Python Setup Script
+### Development Execution
 
 ```bash
-python3 setup.py
+# Web Development Server
+npm run dev
+
+# Desktop App (Electron)
+npm run electron:dev
+
+# Run Diagnostic Health Check
+./doctor.sh
 ```
 
 ---
 
-## 🔒 Security Architecture & Protocol Upgrades
+## 🔒 Security Architecture
 
-- **Electron Security**:
-  - `contextIsolation: true`
-  - `nodeIntegration: false`
-  - `sandbox: true`
-  - `webSecurity: true`
-  - Secure external URL handler (`setWindowOpenHandler` enforcing `http:`/`https:` browser delegation)
-- **Content Security Policy (CSP)**: Hardened CSP headers in `index.html`.
-- **Master App Password**: Password verification prompt protecting database wipes (`Clear Entire Database`) and data exports in Settings.
+* **Local-First Privacy**: All user data, habits, tasks, and journals are persisted locally via Dexie IndexedDB.
+* **Hardened Electron Security**: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `webSecurity: true`.
+* **Password Protection**: Database wipes and backup data extractions require Master Security Password verification.
 
 ---
 
 ## 📜 License
 
-Distributed under the MIT License. Developed by **Project Hellhound**.
+Distributed under the MIT License. Built by **Project Hellhound**.

@@ -5,6 +5,7 @@ import { initializeDatabase } from './db/seed';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ContextualSidebarDrawer } from './components/ContextualSidebarDrawer';
+import { EnvironmentalBackground } from './components/EnvironmentalBackground';
 import { DashboardView } from './views/DashboardView';
 import { HabitsView } from './views/HabitsView';
 import { TasksView } from './views/TasksView';
@@ -47,21 +48,14 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  // Sync background texture and palette data attributes to document/canvas
+  // Sync environmental theme attribute to document root
   useEffect(() => {
-    if (settings) {
-      if (settings.theme) {
-        document.documentElement.setAttribute('data-theme', settings.theme);
-      }
-      if (settings.colorPalette) {
-        document.documentElement.setAttribute('data-palette', settings.colorPalette);
-      }
-      const rootCanvas = document.getElementById('app-root-canvas');
-      if (rootCanvas && settings.backgroundTexture) {
-        rootCanvas.setAttribute('data-texture', settings.backgroundTexture);
-      }
+    if (settings?.environmentTheme) {
+      document.documentElement.setAttribute('data-theme', settings.environmentTheme);
+    } else {
+      document.documentElement.setAttribute('data-theme', 'rain_forest');
     }
-  }, [settings?.theme, settings?.colorPalette, settings?.backgroundTexture]);
+  }, [settings?.environmentTheme]);
 
   if (!isInitialized || showSplash) {
     return (
@@ -72,8 +66,8 @@ export const App: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
           height: '100vh',
-          background: '#0D221A',
-          color: '#F3F1E7',
+          background: '#071A13',
+          color: '#E8F5EC',
         }}
       >
         <div className="app-launch-reveal" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
@@ -82,32 +76,36 @@ export const App: React.FC = () => {
               width: '72px',
               height: '72px',
               borderRadius: '20px',
-              background: 'linear-gradient(135deg, #2E5E44 0%, #8FAF82 100%)',
+              background: 'linear-gradient(135deg, #163A29 0%, #2F8F5B 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 12px 36px rgba(0,0,0,0.4)',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
+              border: '1px solid rgba(141, 217, 160, 0.2)',
             }}
           >
-            <Leaf size={40} style={{ color: '#FFFFFF' }} />
+            <Leaf size={40} style={{ color: '#57B978' }} />
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#F3F1E7' }}>🌿 Forest Flow</h1>
-          <p className="subtitle" style={{ color: '#8FAF82', fontSize: '0.9rem' }}>
-            Initializing fluid workspace & botanical theme engine...
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#E8F5EC' }}>🌿 Habit OS</h1>
+          <p className="subtitle" style={{ color: '#A9C7B3', fontSize: '0.9rem' }}>
+            Initializing environmental workspace...
           </p>
         </div>
       </div>
     );
   }
 
-  const textureAttr = settings?.backgroundTexture || 'grain';
+  const activeTheme = settings?.environmentTheme || 'rain_forest';
 
   return (
     <div
       id="app-root-canvas"
-      data-texture={textureAttr}
       style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-primary)', position: 'relative' }}
     >
+      {/* Dynamic 6-Layer Environmental Background */}
+      <EnvironmentalBackground theme={activeTheme} settings={settings} />
+
+      {/* Application UI */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', minWidth: 0, overflow: 'hidden', zIndex: 1 }}>
@@ -142,6 +140,7 @@ export const App: React.FC = () => {
 };
 
 export default App;
+
 
 
 

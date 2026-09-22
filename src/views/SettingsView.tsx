@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, ForestTexture, ForestPalette } from '../db/schema';
+import { db, ForestTheme } from '../db/schema';
 import { resetAllDataToInitialState } from '../db/seed';
 import { getAISettings, saveAISettings, testAIConnection, maskApiKey } from '../services/aiProviderService';
-import { Download, Trash2, Sparkles, Lock, ShieldAlert, KeyRound, Eye, EyeOff, CheckCircle2, AlertCircle, Palette, Image as ImageIcon } from 'lucide-react';
+import { Download, Trash2, Sparkles, Lock, ShieldAlert, KeyRound, Eye, EyeOff, CheckCircle2, AlertCircle, Palette } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
   const settings = useLiveQuery(() => db.settings.get('default'));
   const aiSettingsLive = useLiveQuery(() => db.aiSettings.get('default'));
 
   const [userName, setUserName] = useState(settings?.userName || 'User');
-  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>(settings?.theme || 'dark');
-  const [accentColor, setAccentColor] = useState<string>(settings?.accentColor || '#ffffff');
-  const [backgroundTexture, setBackgroundTexture] = useState<ForestTexture>(settings?.backgroundTexture || 'grain');
-  const [colorPalette, setColorPalette] = useState<ForestPalette>(settings?.colorPalette || 'pine');
+  const [environmentTheme, setEnvironmentTheme] = useState<ForestTheme>(settings?.environmentTheme || 'rain_forest');
+  const [animationEnabled, setAnimationEnabled] = useState<boolean>(settings?.animationEnabled !== false);
+  const [ambientMotionEnabled, setAmbientMotionEnabled] = useState<boolean>(settings?.ambientMotionEnabled !== false);
+  const [environmentIntensity, setEnvironmentIntensity] = useState<number>(settings?.environmentIntensity ?? 85);
+  const [motionSpeed, setMotionSpeed] = useState<number>(settings?.motionSpeed ?? 50);
+  const [mistRainDensity, setMistRainDensity] = useState<number>(settings?.mistRainDensity ?? 60);
 
   // Master App Password State & Update Verification
   const [appPasswordInput, setAppPasswordInput] = useState(settings?.appPassword || '');
@@ -41,17 +43,28 @@ export const SettingsView: React.FC = () => {
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [localModelsList, setLocalModelsList] = useState<string[]>(['llama3.1', 'qwen2.5:3b-instruct', 'gemma2:2b', 'mistral']);
 
-  // Sync Settings state on load (Fixes Settings Persistence Reset bug)
+  // Sync Settings state on load
   useEffect(() => {
     if (settings) {
       setUserName(settings.userName || 'User');
-      setTheme(settings.theme || 'dark');
-      setAccentColor(settings.accentColor || '#ffffff');
-      setBackgroundTexture(settings.backgroundTexture || 'grain');
-      setColorPalette(settings.colorPalette || 'pine');
+      setEnvironmentTheme(settings.environmentTheme || 'rain_forest');
+      setAnimationEnabled(settings.animationEnabled !== false);
+      setAmbientMotionEnabled(settings.ambientMotionEnabled !== false);
+      setEnvironmentIntensity(settings.environmentIntensity ?? 85);
+      setMotionSpeed(settings.motionSpeed ?? 50);
+      setMistRainDensity(settings.mistRainDensity ?? 60);
       setAppPasswordInput(settings.appPassword || '');
     }
-  }, [settings?.userName, settings?.theme, settings?.accentColor, settings?.backgroundTexture, settings?.colorPalette, settings?.appPassword]);
+  }, [
+    settings?.userName,
+    settings?.environmentTheme,
+    settings?.animationEnabled,
+    settings?.ambientMotionEnabled,
+    settings?.environmentIntensity,
+    settings?.motionSpeed,
+    settings?.mistRainDensity,
+    settings?.appPassword,
+  ]);
 
   useEffect(() => {
     getAISettings().then((res) => {
@@ -76,18 +89,6 @@ export const SettingsView: React.FC = () => {
       .catch(() => {});
   }, [aiSettingsLive?.mode, aiSettingsLive?.model]);
 
-  const textures: { id: ForestTexture; label: string; desc: string }[] = [
-    { id: 'grain', label: 'Forest Grain', desc: 'Tactile organic wood and earth noise' },
-    { id: 'leaf', label: 'Leaf Forest', desc: 'Subtle botanical canopy silhouettes' },
-    { id: 'rainy', label: 'Rainy Forest', desc: 'Misty raindrops with glistening light' },
-  ];
-
-  const palettes: { id: ForestPalette; label: string; previewColor: string; desc: string }[] = [
-    { id: 'leaf', label: 'Leaf Theme', previewColor: '#327A56', desc: 'Vibrant botanical green canopy' },
-    { id: 'pine', label: 'Pine Theme', previewColor: '#2E5E44', desc: 'Deep evergreen pine baseline' },
-    { id: 'mist', label: 'Mist Theme', previewColor: '#386B6F', desc: 'Cool mountain fog atmosphere' },
-  ];
-
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordUpdateError('');
@@ -104,10 +105,14 @@ export const SettingsView: React.FC = () => {
     await db.settings.put({
       id: 'default',
       userName,
-      theme,
-      accentColor,
-      backgroundTexture,
-      colorPalette,
+      theme: 'dark',
+      accentColor: '#ffffff',
+      environmentTheme,
+      animationEnabled,
+      ambientMotionEnabled,
+      environmentIntensity,
+      motionSpeed,
+      mistRainDensity,
       appPassword: appPasswordInput,
       weekStartDay: 1,
       productivityWeights: { habitWeight: 40, taskWeight: 30, focusWeight: 20, goalWeight: 10 },
@@ -129,14 +134,9 @@ export const SettingsView: React.FC = () => {
       behavioralFramework,
     });
 
-    document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.setAttribute('data-palette', colorPalette);
-    const rootCanvas = document.getElementById('app-root-canvas');
-    if (rootCanvas) {
-      rootCanvas.setAttribute('data-texture', backgroundTexture);
-    }
+    document.documentElement.setAttribute('data-theme', environmentTheme);
     setCurrentPasswordInput('');
-    alert('Settings, Forest Theme & AI Provider configuration saved successfully.');
+    alert('Settings, Environmental Theme & AI Provider configuration saved successfully.');
   };
 
   const handleTestAIConnection = async () => {
@@ -207,86 +207,198 @@ export const SettingsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Forest Theme & Visual Customization */}
+      {/* Forest Environmental Appearance Settings */}
       <div className="liquid-panel flip-card-item">
-        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Palette size={20} style={{ color: 'var(--accent-secondary)' }} /> Forest Palette & Texture Customization
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <Palette size={20} style={{ color: 'var(--accent-secondary)' }} /> Appearance & Atmosphere Engine
         </h3>
-        
-        {/* Color Palette Selector */}
-        <div style={{ marginTop: '1.25rem', marginBottom: '1.5rem' }}>
-          <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block', fontWeight: 600 }}>
-            Color Palette Theme
+
+        {/* Environment Selection */}
+        <div style={{ marginBottom: '1.75rem' }}>
+          <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block', fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+            Environment
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            {palettes.map((p) => {
-              const isSel = colorPalette === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setColorPalette(p.id);
-                    document.documentElement.setAttribute('data-palette', p.id);
-                  }}
-                  style={{
-                    padding: '1rem 1.25rem',
-                    borderRadius: 'var(--radius-md)',
-                    background: isSel ? 'rgba(25, 61, 47, 0.9)' : 'rgba(13, 34, 26, 0.6)',
-                    border: isSel ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 200ms ease',
-                    boxShadow: isSel ? '0 0 16px rgba(143, 175, 130, 0.25)' : 'none',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem' }}>
-                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: p.previewColor, boxShadow: '0 0 8px rgba(0,0,0,0.5)' }} />
-                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{p.label}</strong>
-                  </div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{p.desc}</p>
-                </button>
-              );
-            })}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+            {/* Rain Forest Card */}
+            <button
+              type="button"
+              onClick={async () => {
+                setEnvironmentTheme('rain_forest');
+                await db.settings.update('default', { environmentTheme: 'rain_forest' });
+                document.documentElement.setAttribute('data-theme', 'rain_forest');
+              }}
+              style={{
+                padding: '1.25rem',
+                borderRadius: 'var(--radius-md)',
+                background: environmentTheme === 'rain_forest' ? 'rgba(22, 58, 41, 0.85)' : 'rgba(11, 38, 27, 0.45)',
+                border: environmentTheme === 'rain_forest' ? '2px solid #2F8F5B' : '1px solid var(--border-color)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 300ms cubic-bezier(0.22, 1, 0.36, 1)',
+                boxShadow: environmentTheme === 'rain_forest' ? '0 0 20px rgba(47, 143, 91, 0.25)' : 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#2F8F5B', boxShadow: '0 0 10px rgba(87, 185, 120, 0.5)' }} />
+                  <strong style={{ fontSize: '1.05rem', color: '#E8F5EC' }}>Rain Forest</strong>
+                </div>
+                <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px', background: 'rgba(87, 185, 120, 0.15)', color: '#57B978' }}>
+                  Deep, Lush & Living
+                </span>
+              </div>
+              <p style={{ fontSize: '0.825rem', color: '#A9C7B3', margin: 0, lineHeight: 1.45 }}>
+                Dense tropical canopy after rain. Deep emerald floor, wet leaves, subtle rain drops, and moving light rays.
+              </p>
+            </button>
+
+            {/* Foggy Mist Forest Card */}
+            <button
+              type="button"
+              onClick={async () => {
+                setEnvironmentTheme('foggy_mist');
+                await db.settings.update('default', { environmentTheme: 'foggy_mist' });
+                document.documentElement.setAttribute('data-theme', 'foggy_mist');
+              }}
+              style={{
+                padding: '1.25rem',
+                borderRadius: 'var(--radius-md)',
+                background: environmentTheme === 'foggy_mist' ? 'rgba(32, 45, 41, 0.85)' : 'rgba(24, 35, 32, 0.45)',
+                border: environmentTheme === 'foggy_mist' ? '2px solid #536F61' : '1px solid var(--border-color)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 300ms cubic-bezier(0.22, 1, 0.36, 1)',
+                boxShadow: environmentTheme === 'foggy_mist' ? '0 0 20px rgba(83, 111, 97, 0.25)' : 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#536F61', boxShadow: '0 0 10px rgba(195, 209, 202, 0.4)' }} />
+                  <strong style={{ fontSize: '1.05rem', color: '#E3EBE7' }}>Foggy Mist Forest</strong>
+                </div>
+                <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px', background: 'rgba(168, 184, 177, 0.15)', color: '#A8B8B1' }}>
+                  Quiet, Cold & Atmospheric
+                </span>
+              </div>
+              <p style={{ fontSize: '0.825rem', color: '#AABAB3', margin: 0, lineHeight: 1.45 }}>
+                Early morning mountain woods with heavy mist, cool desaturated tones, and slow-moving atmospheric moisture.
+              </p>
+            </button>
           </div>
         </div>
 
-        {/* Background Texture Selector */}
-        <div>
-          <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block', fontWeight: 600 }}>
-            Background Texture Overlay
+        <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1.5rem 0' }} />
+
+        {/* Atmosphere Controls */}
+        <div style={{ marginBottom: '1.75rem' }}>
+          <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block', fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+            Atmosphere
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            {textures.map((t) => {
-              const isSel = backgroundTexture === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => {
-                    setBackgroundTexture(t.id);
-                    const rootCanvas = document.getElementById('app-root-canvas');
-                    if (rootCanvas) rootCanvas.setAttribute('data-texture', t.id);
-                  }}
-                  style={{
-                    padding: '1rem 1.25rem',
-                    borderRadius: 'var(--radius-md)',
-                    background: isSel ? 'rgba(25, 61, 47, 0.9)' : 'rgba(13, 34, 26, 0.6)',
-                    border: isSel ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 200ms ease',
-                    boxShadow: isSel ? '0 0 16px rgba(143, 175, 130, 0.25)' : 'none',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem' }}>
-                    <ImageIcon size={18} style={{ color: isSel ? 'var(--accent-secondary)' : 'var(--text-muted)' }} />
-                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{t.label}</strong>
-                  </div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{t.desc}</p>
-                </button>
-              );
-            })}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.85rem 1.15rem',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--surface-color)',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              <div>
+                <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-primary)' }}>Animation</strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Rain fall & fog motion</span>
+              </div>
+              <button
+                type="button"
+                className={`btn ${animationEnabled ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+                onClick={() => setAnimationEnabled(!animationEnabled)}
+              >
+                {animationEnabled ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.85rem 1.15rem',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--surface-color)',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              <div>
+                <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-primary)' }}>Ambient Motion</strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Foliage & sunlight drift</span>
+              </div>
+              <button
+                type="button"
+                className={`btn ${ambientMotionEnabled ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+                onClick={() => setAmbientMotionEnabled(!ambientMotionEnabled)}
+              >
+                {ambientMotionEnabled ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1.5rem 0' }} />
+
+        {/* Intensity Sliders */}
+        <div>
+          <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block', fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+            Intensity
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-primary)' }}>Environment Opacity</span>
+                <span style={{ color: 'var(--text-muted)' }}>{environmentIntensity}%</span>
+              </div>
+              <input
+                type="range"
+                min="20"
+                max="100"
+                value={environmentIntensity}
+                onChange={(e) => setEnvironmentIntensity(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-primary)' }}>Motion Speed</span>
+                <span style={{ color: 'var(--text-muted)' }}>{motionSpeed}%</span>
+              </div>
+              <input
+                type="range"
+                min="10"
+                max="100"
+                value={motionSpeed}
+                onChange={(e) => setMotionSpeed(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-primary)' }}>Mist / Rain Density</span>
+                <span style={{ color: 'var(--text-muted)' }}>{mistRainDensity}%</span>
+              </div>
+              <input
+                type="range"
+                min="10"
+                max="100"
+                value={mistRainDensity}
+                onChange={(e) => setMistRainDensity(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
+              />
+            </div>
           </div>
         </div>
       </div>

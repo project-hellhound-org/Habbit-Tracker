@@ -180,8 +180,7 @@ export interface Tag {
   color: string;
 }
 
-export type ForestTexture = 'grain' | 'leaf' | 'rainy';
-export type ForestPalette = 'leaf' | 'pine' | 'mist';
+export type ForestTheme = 'rain_forest' | 'foggy_mist';
 
 export interface AppSettings {
   id: string;
@@ -189,8 +188,12 @@ export interface AppSettings {
   appPassword?: string;
   theme: 'dark' | 'light' | 'system';
   accentColor: string;
-  backgroundTexture?: ForestTexture;
-  colorPalette?: ForestPalette;
+  environmentTheme: ForestTheme;
+  animationEnabled: boolean;
+  ambientMotionEnabled: boolean;
+  environmentIntensity: number; // 0..100
+  motionSpeed: number;          // 0..100
+  mistRainDensity: number;      // 0..100
   weekStartDay: number;
   productivityWeights: {
     habitWeight: number;

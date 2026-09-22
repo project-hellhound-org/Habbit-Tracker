@@ -1,146 +1,111 @@
 :root {
-  /* Forest Flow Base Color System Tokens (Default: Pine Palette) */
-  --bg-primary: #0D221A; /* Deep Forest Pine */
-  --bg-secondary: #142F24; /* Dark Forest Surface */
-  --bg-elevated: #193D2F; /* Elevated Pine Surface */
-  --border-color: rgba(60, 110, 85, 0.28);
-  --border-hover: rgba(100, 170, 130, 0.45);
-  --border-glow: rgba(143, 175, 130, 0.35);
-
-  --text-primary: #F3F1E7; /* Warm Paper */
-  --text-secondary: #C5D6B9; /* Soft Sage */
-  --text-muted: #8FAF82; /* Muted Leaf */
-
-  --accent-primary: #2E5E44; /* Forest Green Button */
-  --accent-hover: #3A7555;
-  --accent-secondary: #8FAF82; /* Sage Accent */
-  --accent-glow: rgba(143, 175, 130, 0.25);
+  /* Default Base Color Tokens (Rain Forest) */
+  --bg-primary: #071A13;
+  --bg-secondary: #0B261B;
+  --bg-surface: #102F22;
+  --bg-elevated: #163A29;
+  --accent-primary: #2F8F5B;
+  --accent-hover: #3AA96C;
+  --accent-secondary: #57B978;
+  --accent-highlight: #8DD9A0;
+  --accent-glow: rgba(141, 217, 160, 0.20);
   
-  --surface-paper: #F5F3E9;
-  --surface-paper-light: #FAF9F3;
-  --surface-paper-dark: #EDEDE3;
-  --text-paper-dark: #1E3026;
+  --text-primary: #E8F5EC;
+  --text-secondary: #A9C7B3;
+  --text-muted: #7DA68B;
+
+  --border-color: rgba(141, 217, 160, 0.14);
+  --border-hover: rgba(141, 217, 160, 0.28);
+  --border-glow: rgba(141, 217, 160, 0.22);
+  --card-bg: rgba(13, 42, 29, 0.72);
+  --glass-blur: blur(18px);
 
   /* Progress Bar Colors */
-  --progress-track: rgba(216, 225, 209, 0.18);
-  --progress-fill: #527653;
+  --progress-track: rgba(141, 217, 160, 0.12);
+  --progress-fill: #57B978;
 
   /* Heatmap Performance Colors */
-  --heatmap-25: #556B60; /* Soft Pine Grey */
-  --heatmap-50: #E6A817; /* Solar Yellow */
-  --heatmap-75: #E86A33; /* Terracotta Orange */
-  --heatmap-100: #429867; /* Vibrant Moss Green */
+  --heatmap-25: #556B60;
+  --heatmap-50: #D8B45A;
+  --heatmap-75: #E86A33;
+  --heatmap-100: #57B978;
 
   /* Semantic Tokens */
-  --success: #527653;
-  --warning: #F59E0B;
+  --success: #57B978;
+  --warning: #D8B45A;
   --danger: #EF4444;
   --info: #3B82F6;
-  --neutral: #737373;
 
   --danger-bg: rgba(239, 68, 68, 0.15);
-  --success-bg: rgba(82, 118, 83, 0.2);
-  --warning-bg: rgba(245, 158, 11, 0.15);
+  --success-bg: rgba(87, 185, 120, 0.2);
+  --warning-bg: rgba(216, 180, 90, 0.15);
 
   --font-sans: 'Inter', 'Manrope', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', 'Manrope', sans-serif;
-  --font-serif: 'DM Serif Display', Georgia, serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
-  --radius-xl: 28px;
   --radius-full: 9999px;
 
   --header-height: 64px;
 
-  /* Motion Duration Tokens */
   --motion-instant: 100ms;
   --motion-fast: 180ms;
   --motion-normal: 260ms;
-  --motion-medium: 380ms;
   --motion-slow: 650ms;
 
-  /* Motion Easing Tokens */
   --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
-  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
-  --ease-fluid: cubic-bezier(0.25, 1, 0.35, 1);
+  --ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ==========================================================================
-   COLOR PALETTE THEMES (Leaf, Pine, Mist)
+   EXCLUSIVE ENVIRONMENT THEMES (Rain Forest & Foggy Mist Forest)
    ========================================================================== */
 
-/* 1. Leaf Palette (Vibrant Botanical Canopy) */
-[data-palette='leaf'] {
-  --bg-primary: #10251B;
-  --bg-secondary: #173729;
-  --bg-elevated: #1F4635;
-  --border-color: rgba(54, 122, 89, 0.28);
-  --border-hover: rgba(85, 175, 130, 0.45);
-  --border-glow: rgba(146, 214, 177, 0.35);
-  --accent-primary: #327A56;
-  --accent-hover: #40996D;
-  --accent-secondary: #92D6B1;
-  --accent-glow: rgba(146, 214, 177, 0.25);
-  --text-primary: #EEF8F2;
-  --text-secondary: #BEE3CE;
-  --text-muted: #7FC49E;
+/* 1. Rain Forest — Deep, Lush & Living */
+[data-theme='rain_forest'] {
+  --bg-primary: #071A13;
+  --bg-secondary: #0B261B;
+  --bg-surface: #102F22;
+  --bg-elevated: #163A29;
+  --accent-primary: #2F8F5B;
+  --accent-hover: #3AA96C;
+  --accent-secondary: #57B978;
+  --accent-highlight: #8DD9A0;
+  --accent-glow: rgba(141, 217, 160, 0.20);
+  --text-primary: #E8F5EC;
+  --text-secondary: #A9C7B3;
+  --text-muted: #7DA68B;
+  --border-color: rgba(141, 217, 160, 0.14);
+  --border-hover: rgba(141, 217, 160, 0.28);
+  --border-glow: rgba(141, 217, 160, 0.22);
+  --warning: #D8B45A;
+  --card-bg: rgba(13, 42, 29, 0.72);
+  --glass-blur: blur(18px);
 }
 
-/* 2. Pine Palette (Deep Evergreen Baseline) */
-[data-palette='pine'] {
-  --bg-primary: #0D221A;
-  --bg-secondary: #142F24;
-  --bg-elevated: #193D2F;
-  --border-color: rgba(60, 110, 85, 0.28);
-  --border-hover: rgba(100, 170, 130, 0.45);
-  --border-glow: rgba(143, 175, 130, 0.35);
-  --accent-primary: #2E5E44;
-  --accent-hover: #3A7555;
-  --accent-secondary: #8FAF82;
-  --accent-glow: rgba(143, 175, 130, 0.25);
-  --text-primary: #F3F1E7;
-  --text-secondary: #C5D6B9;
-  --text-muted: #8FAF82;
-}
-
-/* 3. Mist Palette (Cool Atmosphere & Mountain Fog) */
-[data-palette='mist'] {
-  --bg-primary: #142024;
-  --bg-secondary: #1D2D33;
-  --bg-elevated: #263B42;
-  --border-color: rgba(60, 110, 113, 0.28);
-  --border-hover: rgba(100, 165, 170, 0.45);
-  --border-glow: rgba(160, 196, 201, 0.35);
-  --accent-primary: #386B6F;
-  --accent-hover: #48868B;
-  --accent-secondary: #A0C4C9;
-  --accent-glow: rgba(160, 196, 201, 0.25);
-  --text-primary: #EFF5F6;
-  --text-secondary: #C7DFE2;
-  --text-muted: #8FB4B9;
-}
-
-[data-theme='light'] {
-  --bg-primary: #F5F3E9;
-  --bg-secondary: #FAF9F3;
-  --bg-elevated: #EDEDE3;
-  --border-color: #D6DEC8;
-  --border-hover: #B5C4A3;
-
-  --text-primary: #173A2B;
-  --text-secondary: #31563D;
-  --text-muted: #527653;
-
-  --accent-primary: #315D43;
-  --accent-secondary: #527653;
-
-  --danger-bg: rgba(239, 68, 68, 0.08);
-  --success-bg: rgba(82, 118, 83, 0.1);
-  --warning-bg: rgba(245, 158, 11, 0.08);
+/* 2. Foggy Mist Forest — Quiet, Cold & Atmospheric */
+[data-theme='foggy_mist'] {
+  --bg-primary: #111A18;
+  --bg-secondary: #182320;
+  --bg-surface: #202D29;
+  --bg-elevated: #293934;
+  --accent-primary: #536F61;
+  --accent-hover: #628373;
+  --accent-secondary: #6F8C7C;
+  --accent-highlight: #C3D1CA;
+  --accent-glow: rgba(195, 209, 202, 0.20);
+  --text-primary: #E3EBE7;
+  --text-secondary: #AABAB3;
+  --text-muted: #829A90;
+  --border-color: rgba(195, 209, 202, 0.12);
+  --border-hover: rgba(195, 209, 202, 0.25);
+  --border-glow: rgba(195, 209, 202, 0.20);
+  --warning: #D8B45A;
+  --card-bg: rgba(24, 35, 32, 0.76);
+  --glass-blur: blur(18px);
 }
 
 * {
@@ -156,7 +121,7 @@ body {
   height: 100vh;
   overflow: hidden;
   line-height: 1.5;
-  transition: background-color var(--motion-slow) var(--ease-standard), color var(--motion-slow) var(--ease-standard);
+  transition: background-color 3s cubic-bezier(0.22, 1, 0.36, 1), color 3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ==========================================================================

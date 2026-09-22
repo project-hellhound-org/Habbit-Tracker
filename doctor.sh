@@ -92,7 +92,7 @@ if command -v ollama >/dev/null 2>&1; then
         echo -e "${YELLOW}[INFO] Ollama service not running on port 11434. Start with 'ollama serve'.${NC}"
     fi
 else
-    echo -e "${YELLOW}[INFO] Ollama not installed. Built-in Offline Engine and Cloud Providers (OpenAI, Anthropic, Gemini, NVIDIA) remain available.${NC}"
+    echo -e "${YELLOW}[INFO] Ollama not installed. Built-in Offline Engine and Generic Cloud AI Providers remain available.${NC}"
 fi
 
 echo -e "\n${BOLD}===================================================================="
