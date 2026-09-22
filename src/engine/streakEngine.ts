@@ -4,7 +4,11 @@ import { format, subDays } from 'date-fns';
 /**
  * Calculates the accurate real-time consecutive day streak based on completion activity.
  */
-export function calculateCurrentStreak(habitLogs: HabitLog[], tasks: Task[]): number {
+export function calculateCurrentStreak(
+  habitLogs: HabitLog[],
+  tasks: Task[],
+  availableFreezes: number = 0
+): { currentStreak: number; freezeEarned: number; isFreezeShieldActive: boolean } {
   const completedDatesSet = new Set<string>();
 
   // Collect habit completion dates
@@ -24,33 +28,61 @@ export function calculateCurrentStreak(habitLogs: HabitLog[], tasks: Task[]): nu
     }
   });
 
-  if (completedDatesSet.size === 0) return 0;
+  if (completedDatesSet.size === 0) {
+    return { currentStreak: 0, freezeEarned: 0, isFreezeShieldActive: false };
+  }
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
 
-  // Determine starting date for streak counting (today if active, else yesterday)
   let checkDate = new Date();
+  let unusedFreezes = availableFreezes;
+  let isFreezeShieldActive = false;
+
+  // Determine starting date for streak counting (today if active, else yesterday or check freeze)
   if (!completedDatesSet.has(todayStr)) {
     if (completedDatesSet.has(yesterdayStr)) {
       checkDate = subDays(new Date(), 1);
+    } else if (unusedFreezes > 0) {
+      // Shield missed today/yesterday using earned freeze
+      unusedFreezes--;
+      isFreezeShieldActive = true;
+      checkDate = subDays(new Date(), 1);
     } else {
-      return 0; // No activity today or yesterday
+      return { currentStreak: 0, freezeEarned: 0, isFreezeShieldActive: false };
     }
   }
 
   let streakCount = 0;
+  let missedDaysInARow = 0;
+
   while (true) {
     const currentCheckStr = format(checkDate, 'yyyy-MM-dd');
     if (completedDatesSet.has(currentCheckStr)) {
       streakCount++;
+      missedDaysInARow = 0;
       checkDate = subDays(checkDate, 1);
     } else {
-      break;
+      // 1 missed day shield protection if streak freeze item is available
+      if (unusedFreezes > 0 && missedDaysInARow === 0) {
+        unusedFreezes--;
+        isFreezeShieldActive = true;
+        missedDaysInARow++;
+        checkDate = subDays(checkDate, 1); // skip missed day and continue
+      } else {
+        break;
+      }
     }
   }
 
-  return streakCount;
+  // Earn 1 streak freeze for every 5 consecutive days of activity
+  const freezeEarned = Math.floor(streakCount / 5);
+
+  return {
+    currentStreak: streakCount,
+    freezeEarned,
+    isFreezeShieldActive,
+  };
 }
 
 /**

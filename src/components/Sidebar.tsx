@@ -24,9 +24,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   const todayIso = format(new Date(), 'yyyy-MM-dd');
   const habits = useLiveQuery(() => db.habits.where('archived').equals(0).toArray()) || [];
   const allLogs = useLiveQuery(() => db.habitLogs.toArray()) || [];
+  const settings = useLiveQuery(() => db.settings.get('default'));
   const todayLogs = allLogs.filter((l) => l.date === todayIso && l.status === 'completed');
   const totalHabits = habits.length || 1;
   const progressPct = Math.min(Math.round((todayLogs.length / totalHabits) * 100), 100);
+
+  const userName = settings?.userName || 'User Workspace';
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -45,6 +48,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       style={{
         width: '260px',
         padding: '1.4rem 0.9rem',
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        overflowY: 'auto',
+        flexShrink: 0,
+        zIndex: 80,
       }}
     >
       <div
@@ -72,12 +81,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         >
           <Leaf size={22} />
         </div>
-        <div>
-          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-            🌿 Forest Flow
+        <div style={{ overflow: 'hidden' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            🌿 {userName}
           </h2>
           <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', letterSpacing: '0.03em' }}>
-            Calm • Focused • Natural
+            Personal Productivity OS
           </span>
         </div>
       </div>

@@ -58,7 +58,7 @@ export const JournalView: React.FC = () => {
   const achievedGoalsCount = goals.filter((g) => g.status === 'achieved' || g.currentValue >= g.targetValue).length;
   const goalsProgressStr = `${achievedGoalsCount}/${goals.length || 4}`;
 
-  const streakDays = calculateCurrentStreak(allHabitLogs, tasks);
+  const { currentStreak: streakDays } = calculateCurrentStreak(allHabitLogs, tasks);
   const streakStr = `${streakDays} days`;
 
   const dynamicSnapshot: DailySnapshotData = {

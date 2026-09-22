@@ -187,7 +187,10 @@ export async function queryAIAssistant(
     };
   }
 
-  const systemPrompt = `
+  // Compact System Prompt for Local Models to minimize KV cache prefill latency
+  const systemPrompt = isLocal
+    ? `You are Habit OS Productivity Assistant. Be concise (max 3 sentences). Context: ${contextData.summary.slice(0, 300)}`
+    : `
 You are Habit OS AI Assistant, a personal productivity copilot.
 
 BEHAVIORAL FRAMEWORK & PERSONALIZATION DIRECTIVES:
@@ -215,20 +218,33 @@ CRITICAL RULES:
     headers['Authorization'] = `Bearer ${settings.apiKey.trim()}`;
   }
 
+  // Disable deep thinking/reasoning and set low token limits for 3-10s local response times
+  const requestBody: any = {
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userQuery },
+    ],
+    temperature: isLocal ? 0.3 : (settings.temperature || 0.7),
+    max_tokens: isLocal ? 256 : 1024,
+  };
+
+  if (isLocal) {
+    requestBody.options = {
+      num_predict: 256,
+      num_ctx: 2048,
+      temperature: 0.3,
+      thinking: false,
+      reasoning: false,
+    };
+  }
+
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers,
       signal,
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userQuery },
-        ],
-        temperature: settings.temperature || 0.7,
-        max_tokens: 1024,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

@@ -169,93 +169,129 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
   const isAllDraftSubtasksCompleted = draftSubtasks.length > 0 && completedSubtasksCount === draftSubtasks.length;
 
   return (
-    <div className="drawer-scrim" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
-      <div className="glass-level-3" style={{ width: '100%', maxWidth: '540px', display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(160, 190, 160, 0.2)', paddingBottom: '0.75rem' }}>
-          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-            <Calendar size={18} style={{ color: '#8FAF82' }} /> {taskToEdit ? 'Edit Task Specification' : 'Create New Task'}
-          </h3>
-          <button className="btn btn-secondary btn-icon btn-xs" onClick={onClose}>
-            <X size={16} />
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.75)',
+        backdropFilter: 'blur(12px)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.25rem',
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="liquid-panel"
+        style={{
+          width: '100%',
+          maxWidth: '620px',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          background: 'var(--bg-secondary)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+          padding: '1.75rem',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+          border: '1px solid var(--border-glow)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+          <div>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+              <Calendar size={20} style={{ color: 'var(--accent-secondary)' }} /> {taskToEdit ? 'Edit Task Specification' : 'Create New Task'}
+            </h3>
+            <p className="subtitle" style={{ fontSize: '0.825rem', margin: '0.2rem 0 0 0' }}>Configure priority level, subtasks, and execution scheduling.</p>
+          </div>
+          <button className="btn btn-secondary btn-icon" onClick={onClose}>
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="form-group">
-            <label className="form-label">Task Title *</label>
-            <input
-              type="text"
-              className="form-input"
-              required
-              placeholder="e.g. System Architecture Security Review..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Section 1: Task Core Overview */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+              1. Task Specification
+            </h4>
+
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 600 }}>Task Title *</label>
+              <input
+                type="text"
+                className="form-input"
+                required
+                placeholder="e.g. System Architecture Security Review..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 600 }}>Detailed Rationale & Scope</label>
+              <textarea
+                className="form-textarea"
+                rows={2}
+                placeholder="Task objectives, scope, or delivery specifications..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Detailed Rationale & Scope</label>
-            <textarea
-              className="form-textarea"
-              rows={2}
-              placeholder="Task objectives, scope, or delivery specifications..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          {/* Subtask Management Feature Section */}
-          <div className="form-group" style={{ background: 'rgba(16, 42, 32, 0.6)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(160, 190, 160, 0.15)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', margin: 0 }}>
-                <CheckSquare size={14} style={{ color: '#8FAF82' }} /> Subtasks Checklist ({completedSubtasksCount}/{draftSubtasks.length})
-              </label>
+          {/* Section 2: Subtask Breakdown */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <CheckSquare size={16} /> 2. Subtasks Checklist ({completedSubtasksCount}/{draftSubtasks.length})
+              </h4>
               {isAllDraftSubtasksCompleted && (
-                <span style={{ fontSize: '0.725rem', color: '#527653', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                  <CheckCircle2 size={13} /> Full Completion Satisfied
+                <span style={{ fontSize: '0.75rem', color: '#527653', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <CheckCircle2 size={14} /> Full Completion Satisfied
                 </span>
               )}
             </div>
 
-            {/* Subtask Progress Bar */}
             {draftSubtasks.length > 0 && (
-              <div className="progress-bar-track" style={{ height: '6px', marginBottom: '0.65rem' }}>
+              <div className="progress-bar-track" style={{ height: '7px', marginBottom: '0.2rem' }}>
                 <div
                   className="progress-bar-fill"
                   style={{
                     width: `${Math.round((completedSubtasksCount / draftSubtasks.length) * 100)}%`,
-                    background: isAllDraftSubtasksCompleted ? '#527653' : '#8FAF82',
+                    background: isAllDraftSubtasksCompleted ? '#527653' : 'var(--accent-secondary)',
                   }}
                 />
               </div>
             )}
 
-            {/* Draft Subtasks List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '140px', overflowY: 'auto', marginBottom: '0.65rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', maxHeight: '160px', overflowY: 'auto' }}>
               {draftSubtasks.map((st) => (
-                <div key={st.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.35rem 0.6rem', background: 'rgba(20, 47, 36, 0.8)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1, textDecoration: st.completed ? 'line-through' : 'none', color: st.completed ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                <div key={st.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.45rem 0.75rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', flex: 1, textDecoration: st.completed ? 'line-through' : 'none', color: st.completed ? 'var(--text-muted)' : 'var(--text-primary)' }}>
                     <input
                       type="checkbox"
                       checked={st.completed}
                       onChange={() => handleToggleDraftSubtask(st.id)}
-                      style={{ width: '15px', height: '15px', cursor: 'pointer' }}
+                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                     />
                     <span>{st.title}</span>
                   </label>
                   <button type="button" className="btn btn-danger btn-icon btn-xs" onClick={() => handleRemoveDraftSubtask(st.id)}>
-                    <Trash2 size={12} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               ))}
             </div>
 
-            {/* Add Subtask Input */}
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
               <input
                 type="text"
                 className="form-input"
-                style={{ flex: 1, fontSize: '0.8rem' }}
+                style={{ flex: 1, fontSize: '0.85rem' }}
                 placeholder="Add actionable subtask step..."
                 value={newSubtaskTitle}
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
@@ -266,102 +302,110 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
                   }
                 }}
               />
-              <button type="button" className="btn btn-secondary btn-xs" onClick={handleAddSubtask}>
+              <button type="button" className="btn btn-secondary btn-xs" onClick={handleAddSubtask} style={{ padding: '0.5rem 0.85rem' }}>
                 <Plus size={14} /> Add Step
               </button>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div className="form-group">
-              <label className="form-label">Priority Level</label>
-              <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value as any)}>
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-                <option value="critical">Critical Priority</option>
-              </select>
-            </div>
+          {/* Section 3: Priority & Schedule */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+              3. Priority & Frequency Rules
+            </h4>
 
-            <div className="form-group">
-              <label className="form-label">Start Date *</label>
-              <input
-                type="date"
-                className="form-input"
-                required
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Frequency Selector: Once a week, Daily, or Custom Mon-Sun */}
-          <div className="form-group">
-            <label className="form-label">Frequency</label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <button
-                type="button"
-                className={`btn ${frequency === 'daily' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ flex: 1 }}
-                onClick={() => setFrequency('daily')}
-              >
-                Daily
-              </button>
-              <button
-                type="button"
-                className={`btn ${frequency === 'once_a_week' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ flex: 1 }}
-                onClick={() => setFrequency('once_a_week')}
-              >
-                Once a Week
-              </button>
-              <button
-                type="button"
-                className={`btn ${frequency === 'custom' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ flex: 1 }}
-                onClick={() => setFrequency('custom')}
-              >
-                Custom Days
-              </button>
-            </div>
-
-            {frequency === 'custom' && (
-              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-                {daysOfWeek.map((d) => {
-                  const selected = customDays.includes(d.value);
-                  return (
-                    <button
-                      key={d.value}
-                      type="button"
-                      onClick={() => toggleDay(d.value)}
-                      style={{
-                        flex: 1,
-                        padding: '0.4rem 0',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-color)',
-                        background: selected ? 'var(--accent-primary)' : 'var(--bg-primary)',
-                        color: selected ? '#ffffff' : 'var(--text-secondary)',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {d.label}
-                    </button>
-                  );
-                })}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Priority Level</label>
+                <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value as any)}>
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                  <option value="critical">Critical Priority</option>
+                </select>
               </div>
-            )}
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Start Date *</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  required
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 600 }}>Execution Frequency</label>
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                <button
+                  type="button"
+                  className={`btn ${frequency === 'daily' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, padding: '0.65rem' }}
+                  onClick={() => setFrequency('daily')}
+                >
+                  Daily
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${frequency === 'once_a_week' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, padding: '0.65rem' }}
+                  onClick={() => setFrequency('once_a_week')}
+                >
+                  Once a Week
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${frequency === 'custom' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, padding: '0.65rem' }}
+                  onClick={() => setFrequency('custom')}
+                >
+                  Custom Days
+                </button>
+              </div>
+
+              {frequency === 'custom' && (
+                <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                  {daysOfWeek.map((d) => {
+                    const selected = customDays.includes(d.value);
+                    return (
+                      <button
+                        key={d.value}
+                        type="button"
+                        onClick={() => toggleDay(d.value)}
+                        style={{
+                          flex: 1,
+                          padding: '0.5rem 0',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-color)',
+                          background: selected ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                          color: selected ? '#ffffff' : 'var(--text-secondary)',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          transition: 'all 150ms ease',
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+            <button type="button" className="btn btn-secondary" onClick={onClose} style={{ padding: '0.65rem 1.25rem' }}>
               Cancel
             </button>
             <button
               type="submit"
               className={`btn btn-primary btn-morph ${submitBtnState}`}
               disabled={submitBtnState !== 'idle'}
+              style={{ padding: '0.65rem 1.5rem' }}
             >
               {submitBtnState === 'creating' ? (
                 'Creating...'
@@ -369,7 +413,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, tas
                 '✓ Created'
               ) : (
                 <>
-                  <Plus size={14} /> {taskToEdit ? 'Save Task Changes' : 'Add Task'}
+                  <Plus size={16} /> {taskToEdit ? 'Save Task Changes' : 'Add Task'}
                 </>
               )}
             </button>

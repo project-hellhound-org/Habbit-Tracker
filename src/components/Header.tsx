@@ -28,9 +28,16 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onToggl
   const totalHabitCount = habits.length || 1;
   const completionPct = habits.length > 0 ? Math.round((completedTodayCount / totalHabitCount) * 100) : 100;
 
-  const currentStreak = calculateCurrentStreak(allHabitLogs, allTasks);
-  const hasFreeze = (settings?.streakFreezeEarned || 0) > 0;
+  const savedEarned = settings?.streakFreezeEarned || 0;
+  const { currentStreak, freezeEarned, isFreezeShieldActive } = calculateCurrentStreak(allHabitLogs, allTasks, savedEarned);
 
+  // Auto-sync earned freeze count to settings database when reaching 5 consecutive day milestones
+  const totalAvailableFreezes = Math.max(savedEarned, freezeEarned);
+  if (freezeEarned > savedEarned && settings) {
+    db.settings.update('default', { streakFreezeEarned: freezeEarned }).catch(() => {});
+  }
+
+  const hasFreeze = totalAvailableFreezes > 0 || isFreezeShieldActive;
   const [isFreezeModalOpen, setIsFreezeModalOpen] = useState(false);
 
   const currentHour = new Date().getHours();

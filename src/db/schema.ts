@@ -180,8 +180,8 @@ export interface Tag {
   color: string;
 }
 
-export type ForestTexture = 'mist' | 'grain' | 'leaf_shadow' | 'evergreen' | 'rainy';
-export type ForestPalette = 'pine' | 'moss' | 'leaf' | 'mist';
+export type ForestTexture = 'grain' | 'leaf' | 'rainy';
+export type ForestPalette = 'leaf' | 'pine' | 'mist';
 
 export interface AppSettings {
   id: string;

@@ -21,21 +21,22 @@ export const AnalyticsView: React.FC = () => {
 
   const trendData = generate30DayAnalyticsTrend(habitLogs, tasks);
   const [hoveredPoint, setHoveredPoint] = useState<DailyTrendPoint | null>(null);
-  const [activeInsightModal, setActiveInsightModal] = useState<'habit' | 'task' | null>(null);
 
   const completedHabitLogsCount = habitLogs.filter((l) => l.status === 'completed').length;
   const totalHabitLogsCount = habitLogs.length || 1;
   const habitOverallPct = Math.round((completedHabitLogsCount / totalHabitLogsCount) * 100);
+  const missedHabitLogsCount = totalHabitLogsCount - completedHabitLogsCount;
 
   const completedTasksCount = tasks.filter((t) => t.status === 'completed').length;
   const totalTasksCount = tasks.length || 1;
   const taskOverallPct = Math.round((completedTasksCount / totalTasksCount) * 100);
 
+  const plannedTasksCount = tasks.filter((t) => t.status === 'planned' || t.status === 'todo' || t.status === 'in_progress').length;
   const criticalTasksCount = tasks.filter((t) => t.priority === 'critical' && t.status !== 'completed').length;
-  const plannedTasksCount = tasks.filter((t) => t.status !== 'completed').length;
+  const overdueTasksCount = tasks.filter((t) => (t.dueDate && t.dueDate < new Date().toISOString().slice(0, 10) && t.status !== 'completed')).length;
 
-  const chartHeight = 200;
-  const chartWidth = 760;
+  const chartHeight = 180;
+  const chartWidth = 720;
   const stepX = chartWidth / Math.max(trendData.length - 1, 1);
 
   const maxTaskCount = Math.max(...trendData.map((d) => d.taskCompletionCount), 5);
@@ -55,13 +56,15 @@ export const AnalyticsView: React.FC = () => {
   const habitPathString = habitLinePoints.map((p) => `${p.x},${p.y}`).join(' L ');
   const taskPathString = taskLinePoints.map((p) => `${p.x},${p.y}`).join(' L ');
 
-  const outerRadius = 42;
-  const outerCircumference = 2 * Math.PI * outerRadius;
-  const habitDashArray = `${(habitOverallPct / 100) * outerCircumference} ${outerCircumference}`;
+  // SVG Pie chart helper calculation
+  const calculatePieSlice = (pct: number, radius: number = 40) => {
+    const circumference = 2 * Math.PI * radius;
+    const strokeDasharray = `${(pct / 100) * circumference} ${circumference}`;
+    return { circumference, strokeDasharray };
+  };
 
-  const innerRadius = 26;
-  const innerCircumference = 2 * Math.PI * innerRadius;
-  const taskDashArray = `${(taskOverallPct / 100) * innerCircumference} ${innerCircumference}`;
+  const habitPie = calculatePieSlice(habitOverallPct);
+  const taskPie = calculatePieSlice(taskOverallPct);
 
   const getHeatmapColor = (pct: number) => {
     if (pct <= 25) return '#556B60';
@@ -75,9 +78,9 @@ export const AnalyticsView: React.FC = () => {
       {/* Header Bar */}
       <div className="view-header">
         <div>
-          <h1 className="view-header-title">System Performance Analytics</h1>
+          <h1 className="view-header-title">Decoupled Performance Analytics</h1>
           <p className="view-header-subtitle">
-            Consolidated dual-line trend graphs, donut metrics, and 30-day performance heatmaps.
+            Dedicated independent charts for Habit Routine consistency and Task Workload delivery.
           </p>
         </div>
       </div>
@@ -93,20 +96,20 @@ export const AnalyticsView: React.FC = () => {
             {completedHabitLogsCount} <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)', fontWeight: 500 }}>({habitOverallPct}%)</span>
           </div>
           <span style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
-            Verified habit logs
+            Verified routine check-ins
           </span>
         </div>
 
         <div className="liquid-panel flip-card-item">
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--warning)', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>TASK WORKLOAD</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>TASK WORKLOAD DELIVERY</span>
             <TrendingUp size={18} />
           </div>
           <div className="hero-stat-number">
             {completedTasksCount} <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)', fontWeight: 500 }}>/ {tasks.length} ({taskOverallPct}%)</span>
           </div>
           <span style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
-            Completed workload tasks
+            Completed task objectives
           </span>
         </div>
 
@@ -122,251 +125,214 @@ export const AnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* 1. Single Graph with Dual Lines */}
-      <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              <TrendingUp size={20} style={{ color: 'var(--accent-secondary)' }} /> Consolidated 30-Day Performance Graph
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>Single integrated view of Habit Completion % and Task Output count.</p>
+      {/* 1. DECOUPLED HABIT ANALYTICS SECTION */}
+      <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.75rem' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-secondary)', margin: 0 }}>
+          <Activity size={22} /> 1. Dedicated Habit Analytics
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1.5rem', alignItems: 'center' }}>
+          {/* Habit 30-Day Trend Bar / Line Chart */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', position: 'relative' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>
+              30-Day Habit Completion Rate (%)
+            </h4>
+            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={{ width: '100%', height: '200px', overflow: 'visible' }}>
+              {[0, 0.25, 0.5, 0.75, 1].map((pct) => (
+                <line
+                  key={pct}
+                  x1="0"
+                  y1={(chartHeight - 30) * pct + 15}
+                  x2={chartWidth}
+                  y2={(chartHeight - 30) * pct + 15}
+                  stroke="var(--border-color)"
+                  strokeDasharray="4 4"
+                  strokeWidth="1"
+                />
+              ))}
+
+              <path d={`M ${habitPathString}`} fill="none" stroke="var(--accent-secondary)" strokeWidth="3.5" strokeLinecap="round" />
+
+              {habitLinePoints.map((pt, idx) => (
+                <g key={idx} onMouseEnter={() => setHoveredPoint(pt.pt)} style={{ cursor: 'pointer' }}>
+                  <circle cx={pt.x} cy={pt.y} r="5.5" fill="var(--accent-secondary)" stroke="var(--bg-primary)" strokeWidth="2" />
+                </g>
+              ))}
+            </svg>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.85rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <span style={{ width: '14px', height: '4px', background: 'var(--accent-secondary)', borderRadius: '2px' }} />
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Habit Completion %</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <span style={{ width: '14px', height: '4px', background: 'var(--warning)', borderRadius: '2px' }} />
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Tasks Completed</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ width: '100%', overflowX: 'auto', background: 'rgba(13, 34, 26, 0.65)', padding: '1.5rem 1rem 0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', position: 'relative' }}>
-          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={{ width: '100%', height: '240px', overflow: 'visible' }}>
-            {[0, 0.25, 0.5, 0.75, 1].map((pct) => (
-              <line
-                key={pct}
-                x1="0"
-                y1={(chartHeight - 30) * pct + 15}
-                x2={chartWidth}
-                y2={(chartHeight - 30) * pct + 15}
-                stroke="var(--border-color)"
-                strokeDasharray="4 4"
-                strokeWidth="1"
-              />
-            ))}
-
-            <path d={`M ${habitPathString}`} fill="none" stroke="var(--accent-secondary)" strokeWidth="3.5" strokeLinecap="round" />
-            <path d={`M ${taskPathString}`} fill="none" stroke="var(--warning)" strokeWidth="3" strokeDasharray="6 3" strokeLinecap="round" />
-
-            {habitLinePoints.map((pt, idx) => (
-              <g key={idx} onMouseEnter={() => setHoveredPoint(pt.pt)} style={{ cursor: 'pointer' }}>
-                <circle cx={pt.x} cy={pt.y} r="5.5" fill="var(--accent-secondary)" stroke="var(--bg-primary)" strokeWidth="2" />
-                <circle cx={taskLinePoints[idx].x} cy={taskLinePoints[idx].y} r="4.5" fill="var(--warning)" stroke="var(--bg-primary)" strokeWidth="2" />
-              </g>
-            ))}
-          </svg>
-
-          {hoveredPoint && (
-            <div style={{ position: 'absolute', top: '15px', right: '25px', background: 'rgba(20, 47, 36, 0.95)', border: '1px solid var(--border-glow)', padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.825rem', color: 'var(--text-primary)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-              <strong>{hoveredPoint.displayLabel}</strong>
-              <div style={{ color: 'var(--accent-secondary)', marginTop: '0.2rem' }}>Habit Completion: {hoveredPoint.habitCompletionPct}%</div>
-              <div style={{ color: 'var(--warning)', marginTop: '0.1rem' }}>Tasks Completed: {hoveredPoint.taskCompletionCount}</div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom Grid: Nested Pie Chart & Performance Heatmap */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
-        
-        {/* 2. Nested Pie Chart */}
-        <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem' }}>
-          <div>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              <PieChartIcon size={20} style={{ color: 'var(--accent-secondary)' }} /> Nested Donut Analytics
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>Task performance circle nested within Habit consistency circle.</p>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem 0' }}>
-            <div style={{ position: 'relative', width: '200px', height: '200px', cursor: 'pointer' }}>
+          {/* Dedicated Habit Pie Chart */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+              Habit Logs Breakdown
+            </h4>
+            <div style={{ position: 'relative', width: '150px', height: '150px' }}>
               <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
-                <circle cx="50" cy="50" r={outerRadius} fill="none" stroke="var(--border-color)" strokeWidth="8" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border-color)" strokeWidth="12" />
                 <circle
                   cx="50"
                   cy="50"
-                  r={outerRadius}
+                  r="40"
                   fill="none"
                   stroke="var(--accent-secondary)"
-                  strokeWidth="8"
-                  strokeDasharray={habitDashArray}
+                  strokeWidth="12"
+                  strokeDasharray={habitPie.strokeDasharray}
                   strokeDashoffset="0"
                   strokeLinecap="round"
-                  onClick={() => setActiveInsightModal('habit')}
                 />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <strong style={{ fontSize: '1.35rem', color: 'var(--text-primary)' }}>{habitOverallPct}%</strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Success</span>
+              </div>
+            </div>
+            <div style={{ marginTop: '1rem', fontSize: '0.825rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.35rem', width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Completed Logs:</span>
+                <strong style={{ color: 'var(--accent-secondary)' }}>{completedHabitLogsCount}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Missed Logs:</span>
+                <strong style={{ color: 'var(--text-muted)' }}>{missedHabitLogsCount}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                <circle cx="50" cy="50" r={innerRadius} fill="none" stroke="var(--border-color)" strokeWidth="8" />
+      {/* 2. DECOUPLED TASK ANALYTICS SECTION */}
+      <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.75rem' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--warning)', margin: 0 }}>
+          <TrendingUp size={22} /> 2. Dedicated Task Analytics
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1.5rem', alignItems: 'center' }}>
+          {/* Task 30-Day Trend Bar / Line Chart */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', position: 'relative' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>
+              30-Day Completed Task Output (Count)
+            </h4>
+            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={{ width: '100%', height: '200px', overflow: 'visible' }}>
+              {[0, 0.25, 0.5, 0.75, 1].map((pct) => (
+                <line
+                  key={pct}
+                  x1="0"
+                  y1={(chartHeight - 30) * pct + 15}
+                  x2={chartWidth}
+                  y2={(chartHeight - 30) * pct + 15}
+                  stroke="var(--border-color)"
+                  strokeDasharray="4 4"
+                  strokeWidth="1"
+                />
+              ))}
+
+              <path d={`M ${taskPathString}`} fill="none" stroke="var(--warning)" strokeWidth="3.5" strokeLinecap="round" />
+
+              {taskLinePoints.map((pt, idx) => (
+                <g key={idx} onMouseEnter={() => setHoveredPoint(pt.pt)} style={{ cursor: 'pointer' }}>
+                  <circle cx={pt.x} cy={pt.y} r="5.5" fill="var(--warning)" stroke="var(--bg-primary)" strokeWidth="2" />
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          {/* Dedicated Task Pie Chart */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+              Task Workload Status
+            </h4>
+            <div style={{ position: 'relative', width: '150px', height: '150px' }}>
+              <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border-color)" strokeWidth="12" />
                 <circle
                   cx="50"
                   cy="50"
-                  r={innerRadius}
+                  r="40"
                   fill="none"
                   stroke="var(--warning)"
-                  strokeWidth="8"
-                  strokeDasharray={taskDashArray}
+                  strokeWidth="12"
+                  strokeDasharray={taskPie.strokeDasharray}
                   strokeDashoffset="0"
                   strokeLinecap="round"
-                  onClick={() => setActiveInsightModal('task')}
                 />
               </svg>
-
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  textAlign: 'center',
-                  pointerEvents: 'none',
-                }}
-              >
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>OVERALL</span>
-                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  {Math.round((habitOverallPct + taskOverallPct) / 2)}%
-                </span>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <strong style={{ fontSize: '1.35rem', color: 'var(--text-primary)' }}>{taskOverallPct}%</strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Delivered</span>
+              </div>
+            </div>
+            <div style={{ marginTop: '1rem', fontSize: '0.825rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.35rem', width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Completed Tasks:</span>
+                <strong style={{ color: 'var(--warning)' }}>{completedTasksCount}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Pending Tasks:</span>
+                <strong style={{ color: 'var(--text-primary)' }}>{plannedTasksCount}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Critical Priority:</span>
+                <strong style={{ color: 'var(--danger)' }}>{criticalTasksCount}</strong>
               </div>
             </div>
           </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '0.85rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-            <button className="btn btn-secondary btn-xs" onClick={() => setActiveInsightModal('habit')}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-secondary)' }} /> Outer: Habits ({habitOverallPct}%)
-            </button>
-            <button className="btn btn-secondary btn-xs" onClick={() => setActiveInsightModal('task')}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--warning)' }} /> Inner: Tasks ({taskOverallPct}%)
-            </button>
-          </div>
         </div>
-
-        {/* 3. System Performance Heatmap */}
-        <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem' }}>
-          <div>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              <Flame size={20} style={{ color: 'var(--warning)' }} /> System Performance Heatmap
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>Streak execution intensity across 30 days based on completion thresholds.</p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.55rem', padding: '0.5rem 0' }}>
-            {trendData.map((pt, idx) => {
-              const color = getHeatmapColor(pt.habitCompletionPct);
-              return (
-                <div
-                  key={idx}
-                  title={`${pt.displayLabel}: ${pt.habitCompletionPct}% Completion`}
-                  style={{
-                    aspectRatio: '1',
-                    borderRadius: '8px',
-                    background: color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.725rem',
-                    fontWeight: 700,
-                    color: '#FFFFFF',
-                    cursor: 'pointer',
-                    boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
-                    transition: 'transform 200ms ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.15)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                >
-                  {pt.displayLabel.split(' ')[1]}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Color Coding Legend */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.775rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', color: 'var(--text-secondary)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#556B60' }} /> 25% (Grey)
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E6A817' }} /> 50% (Yellow)
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E86A33' }} /> 75% (Orange)
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#429867' }} /> 100% (Green)
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      {/* Interactive Detail Modal on Ring Click */}
-      {activeInsightModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="liquid-panel" style={{ width: '100%', maxWidth: '520px', background: 'var(--bg-secondary)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.85rem' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.2rem', color: 'var(--text-primary)', margin: 0 }}>
-                {activeInsightModal === 'habit' ? (
-                  <>
-                    <CheckCircle2 size={22} style={{ color: 'var(--accent-secondary)' }} /> Habit Consistency Breakdown
-                  </>
-                ) : (
-                  <>
-                    <ListTodo size={22} style={{ color: 'var(--warning)' }} /> Task Workload Breakdown
-                  </>
-                )}
-              </h3>
-              <button className="btn btn-secondary btn-icon" onClick={() => setActiveInsightModal(null)}>
-                <X size={18} />
-              </button>
-            </div>
+      {/* 3. SYSTEM PERFORMANCE HEATMAP */}
+      <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem' }}>
+        <div>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+            <Flame size={20} style={{ color: 'var(--warning)' }} /> 30-Day Activity Heatmap
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>Daily completion intensity heat map based on habit & task completion thresholds.</p>
+        </div>
 
-            {activeInsightModal === 'habit' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-                <p style={{ color: 'var(--text-secondary)' }}>Detailed performance breakdown of all registered routines:</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  {habits.map((h) => (
-                    <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                      <span style={{ color: 'var(--text-primary)' }}><strong>{h.name}</strong> ({h.category})</span>
-                      <span style={{ color: 'var(--accent-secondary)', fontWeight: 700 }}>{h.frequencyMode === 'everyday' ? 'Everyday' : `${h.selectedDays?.length || 0} days/wk`}</span>
-                    </div>
-                  ))}
-                </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.6rem', padding: '0.5rem 0' }}>
+          {trendData.map((pt, idx) => {
+            const color = getHeatmapColor(pt.habitCompletionPct);
+            return (
+              <div
+                key={idx}
+                title={`${pt.displayLabel}: ${pt.habitCompletionPct}% Habit Completion, ${pt.taskCompletionCount} Tasks`}
+                style={{
+                  aspectRatio: '1',
+                  borderRadius: '8px',
+                  background: color,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
+                  transition: 'transform 200ms ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.15)')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              >
+                {pt.displayLabel.split(' ')[1]}
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-                <p style={{ color: 'var(--text-secondary)' }}>Task priority and workload distribution snapshot:</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                    <span style={{ color: 'var(--text-primary)' }}>Completed Tasks</span>
-                    <strong style={{ color: 'var(--accent-secondary)' }}>{completedTasksCount}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                    <span style={{ color: 'var(--text-primary)' }}>Pending Work Items</span>
-                    <strong style={{ color: 'var(--warning)' }}>{plannedTasksCount}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                    <span style={{ color: 'var(--text-primary)' }}>Critical Urgency Tasks</span>
-                    <strong style={{ color: 'var(--danger)' }}>{criticalTasksCount}</strong>
-                  </div>
-                </div>
-              </div>
-            )}
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#556B60' }} /> 25% (Grey)
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E6A817' }} /> 50% (Yellow)
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E86A33' }} /> 75% (Orange)
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#429867' }} /> 100% (Green)
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

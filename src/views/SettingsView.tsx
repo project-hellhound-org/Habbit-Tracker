@@ -12,7 +12,7 @@ export const SettingsView: React.FC = () => {
   const [userName, setUserName] = useState(settings?.userName || 'User');
   const [theme, setTheme] = useState<'dark' | 'light' | 'system'>(settings?.theme || 'dark');
   const [accentColor, setAccentColor] = useState<string>(settings?.accentColor || '#ffffff');
-  const [backgroundTexture, setBackgroundTexture] = useState<ForestTexture>(settings?.backgroundTexture || 'mist');
+  const [backgroundTexture, setBackgroundTexture] = useState<ForestTexture>(settings?.backgroundTexture || 'grain');
   const [colorPalette, setColorPalette] = useState<ForestPalette>(settings?.colorPalette || 'pine');
 
   // Master App Password State & Update Verification
@@ -47,7 +47,7 @@ export const SettingsView: React.FC = () => {
       setUserName(settings.userName || 'User');
       setTheme(settings.theme || 'dark');
       setAccentColor(settings.accentColor || '#ffffff');
-      setBackgroundTexture(settings.backgroundTexture || 'mist');
+      setBackgroundTexture(settings.backgroundTexture || 'grain');
       setColorPalette(settings.colorPalette || 'pine');
       setAppPasswordInput(settings.appPassword || '');
     }
@@ -77,17 +77,14 @@ export const SettingsView: React.FC = () => {
   }, [aiSettingsLive?.mode, aiSettingsLive?.model]);
 
   const textures: { id: ForestTexture; label: string; desc: string }[] = [
-    { id: 'mist', label: 'Mist Forest Overlay', desc: 'Soft floating ambient mountain fog' },
     { id: 'grain', label: 'Forest Grain', desc: 'Tactile organic wood and earth noise' },
-    { id: 'leaf_shadow', label: 'Leaf Shadow', desc: 'Subtle botanical canopy silhouettes' },
-    { id: 'evergreen', label: 'Evergreen Forest', desc: 'Deep needle canopy gradients' },
+    { id: 'leaf', label: 'Leaf Forest', desc: 'Subtle botanical canopy silhouettes' },
     { id: 'rainy', label: 'Rainy Forest', desc: 'Misty raindrops with glistening light' },
   ];
 
   const palettes: { id: ForestPalette; label: string; previewColor: string; desc: string }[] = [
-    { id: 'pine', label: 'Pine Theme', previewColor: '#2E5E44', desc: 'Deep evergreen pine baseline' },
-    { id: 'moss', label: 'Moss Theme', previewColor: '#456B33', desc: 'Warm earthy lichen & moss' },
     { id: 'leaf', label: 'Leaf Theme', previewColor: '#327A56', desc: 'Vibrant botanical green canopy' },
+    { id: 'pine', label: 'Pine Theme', previewColor: '#2E5E44', desc: 'Deep evergreen pine baseline' },
     { id: 'mist', label: 'Mist Theme', previewColor: '#386B6F', desc: 'Cool mountain fog atmosphere' },
   ];
 

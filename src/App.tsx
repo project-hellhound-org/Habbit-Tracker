@@ -100,24 +100,24 @@ export const App: React.FC = () => {
     );
   }
 
-  const textureAttr = settings?.backgroundTexture || 'mist';
+  const textureAttr = settings?.backgroundTexture || 'grain';
 
   return (
     <div
       id="app-root-canvas"
       data-texture={textureAttr}
-      style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}
+      style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-primary)', position: 'relative' }}
     >
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, zIndex: 1 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', minWidth: 0, overflow: 'hidden', zIndex: 1 }}>
         <Header
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           onToggleDrawer={() => setIsDrawerOpen(!isDrawerOpen)}
         />
         
-        <main key={activeTab} className="nav-page-transition" style={{ flex: 1, overflowY: 'auto' }}>
+        <main key={activeTab} className="nav-page-transition" style={{ flex: 1, overflowY: 'auto', scrollbarGutter: 'stable' }}>
           {activeTab === 'dashboard' && <DashboardView setActiveTab={setActiveTab} />}
           {activeTab === 'habits' && <HabitsView />}
           {activeTab === 'tasks' && <TasksView />}
