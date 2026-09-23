@@ -197,17 +197,17 @@ button, input, select, textarea {
 
 .liquid-panel {
   position: relative;
-  background: var(--bg-secondary);
-  background: linear-gradient(145deg, rgba(20, 47, 36, 0.72) 0%, rgba(13, 34, 26, 0.85) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 1.35rem;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.08);
   transition: transform var(--motion-normal) var(--ease-fluid),
               border-color var(--motion-normal) var(--ease-fluid),
-              box-shadow var(--motion-normal) var(--ease-fluid);
+              box-shadow var(--motion-normal) var(--ease-fluid),
+              background 3.0s cubic-bezier(0.22, 1, 0.36, 1);
   overflow: hidden;
 }
 
