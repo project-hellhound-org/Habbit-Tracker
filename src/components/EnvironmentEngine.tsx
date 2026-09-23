@@ -85,18 +85,18 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
     window.addEventListener('resize', handleResize);
 
     // Rain Particles Data Structure (Rain Forest)
-    const numRainDrops = Math.round(75 * densityScale);
+    const numRainDrops = Math.round(90 * densityScale);
     const rainDrops = Array.from({ length: numRainDrops }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      length: 12 + Math.random() * 22,
-      speed: (6 + Math.random() * 8) * (animationEnabled ? motionSpeedScale : 0),
-      opacity: 0.03 + Math.random() * 0.09, // Strict 0.03-0.12 opacity
-      angle: -0.15 + Math.random() * 0.05,
+      length: 14 + Math.random() * 24,
+      speed: (6.5 + Math.random() * 8.5) * (animationEnabled ? motionSpeedScale : 0),
+      opacity: 0.03 + Math.random() * 0.09, // Strict 0.03-0.12 opacity range
+      angle: -0.12 + Math.random() * 0.04,
     }));
 
     // Moisture Particles Data Structure (Foggy Mist Forest)
-    const numMoistureParticles = Math.round(50 * densityScale);
+    const numMoistureParticles = Math.round(60 * densityScale);
     const moistureParticles = Array.from({ length: numMoistureParticles }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -115,7 +115,7 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
       const isRainActive = currentTheme === 'rain_forest' || previousTheme === 'rain_forest';
       if (isRainActive && animationEnabled) {
         const rainWeight = currentTheme === 'rain_forest' ? transitionProgress : 1 - transitionProgress;
-        ctx.strokeStyle = `rgba(141, 217, 160, ${0.4 * rainWeight * environmentOpacity})`;
+        ctx.strokeStyle = `rgba(141, 217, 160, ${0.45 * rainWeight * environmentOpacity})`;
         ctx.lineWidth = 1.5;
 
         for (let i = 0; i < rainDrops.length; i++) {
@@ -196,40 +196,43 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
         }}
       />
 
-      {/* LAYER 2: Large Distant Foliage Silhouettes (Blur 35px, Opacity 0.25) */}
+      {/* LAYER 2: Large Distant Foliage Silhouettes (Blur 35px, Opacity 0.32) */}
       <div
         className={`env-layer layer-2-distant-foliage ${animationEnabled && ambientMotion ? 'animate-foliage-slow-drift' : ''}`}
         style={{
           position: 'absolute',
           inset: '-8%',
           filter: 'blur(35px)',
-          opacity: 0.28,
+          opacity: 0.32,
           animationDuration: `${(45 / motionSpeedScale).toFixed(1)}s`,
         }}
       >
         <svg viewBox="0 0 1400 800" width="100%" height="100%" preserveAspectRatio="none">
           <path d="M0 800 L0 340 Q250 180 500 310 T1000 240 T1400 360 L1400 800 Z" fill="#0F3827" />
-          <path d="M-50 800 L-50 420 Q300 270 650 380 T1250 320 L1450 800 Z" fill="#0B2C1F" opacity="0.75" />
+          <path d="M-50 800 L-50 420 Q300 270 650 380 T1250 320 L1450 800 Z" fill="#0B2C1F" opacity="0.8" />
         </svg>
       </div>
 
-      {/* LAYER 3: Midground Tropical Foliage (Recognizable leaf shapes, blur 10px) */}
+      {/* LAYER 3: Midground Tropical Foliage (Monstera & Palm FRONDS, blur 10px, opacity 0.45) */}
       <div
         className="env-layer layer-3-midground-foliage"
         style={{
           position: 'absolute',
           inset: '-4%',
           filter: 'blur(10px)',
-          opacity: 0.42,
+          opacity: 0.45,
         }}
       >
         <svg viewBox="0 0 1400 800" width="100%" height="100%" preserveAspectRatio="none">
           <path d="M0 800 Q180 520 380 620 T880 540 T1400 700 L1400 800 Z" fill="#102F22" />
-          <path d="M-20 800 Q220 580 480 660 T980 590 L1420 800 Z" fill="#163A29" opacity="0.65" />
+          <path d="M-20 800 Q220 580 480 660 T980 590 L1420 800 Z" fill="#163A29" opacity="0.75" />
+          {/* Detailed Palm Frond Silhouettes */}
+          <path d="M50 800 C150 650 300 580 450 630 C300 680 180 750 50 800 Z" fill="#2F8F5B" opacity="0.35" />
+          <path d="M1350 800 C1250 640 1100 570 950 620 C1100 670 1220 740 1350 800 Z" fill="#2F8F5B" opacity="0.35" />
         </svg>
       </div>
 
-      {/* LAYER 4: Upper Canopy (Top-Left, Top-Right Silhouettes framing UI) */}
+      {/* LAYER 4: Upper Canopy Silhouettes (Top-Left, Top-Right, Upper-Center framing UI) */}
       <div
         className="env-layer layer-4-canopy"
         style={{
@@ -239,12 +242,12 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
           right: '-5%',
           height: '65%',
           filter: 'blur(12px)',
-          opacity: 0.45,
+          opacity: 0.48,
         }}
       >
         <svg viewBox="0 0 1400 600" width="100%" height="100%" preserveAspectRatio="none">
           <path d="M-50 -20 Q180 180 420 50 T900 150 T1350 20 L1450 -50 L-50 -50 Z" fill="#12402C" />
-          <path d="M-20 -30 Q280 130 580 40 T1100 110 L1420 -30 L-20 -30 Z" fill="#164A34" opacity="0.7" />
+          <path d="M-20 -30 Q280 130 580 40 T1100 110 L1420 -30 L-20 -30 Z" fill="#164A34" opacity="0.75" />
         </svg>
       </div>
 
@@ -257,26 +260,26 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
           left: '10%',
           width: '75%',
           height: '160%',
-          background: 'radial-gradient(ellipse at 50% 20%, rgba(141, 217, 160, 0.10) 0%, rgba(87, 185, 120, 0.03) 50%, transparent 75%)',
+          background: 'radial-gradient(ellipse at 50% 20%, rgba(141, 217, 160, 0.12) 0%, rgba(87, 185, 120, 0.03) 50%, transparent 75%)',
           transform: 'rotate(-14deg)',
           pointerEvents: 'none',
           animationDuration: `${(13 / motionSpeedScale).toFixed(1)}s`,
         }}
       />
 
-      {/* LAYER 7: Foreground Foliage (Blurred leaves around screen edges, blur 5px) */}
+      {/* LAYER 7: Foreground Tropical Foliage (Blurred leaves around screen edges, blur 5px) */}
       <div
         className={`env-layer layer-7-foreground-leaves ${animationEnabled && ambientMotion ? 'animate-leaf-spring-oscillation' : ''}`}
         style={{
           position: 'absolute',
           inset: '-2%',
           filter: 'blur(5px)',
-          opacity: 0.38,
+          opacity: 0.42,
           animationDuration: `${(18 / motionSpeedScale).toFixed(1)}s`,
         }}
       >
         <svg viewBox="0 0 1400 800" width="100%" height="100%" preserveAspectRatio="none">
-          {/* Bottom-Left & Top-Right Leaf Silhouettes */}
+          {/* Bottom-Left & Top-Right Monstera / Palm Leaf Silhouettes */}
           <path d="M0 0 C220 110 320 260 170 380 Q-40 260 0 0 Z M1400 800 C1180 680 1060 540 1220 400 Q1420 520 1400 800 Z" fill="#09261B" />
         </svg>
       </div>
@@ -304,45 +307,47 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
         }}
       />
 
-      {/* LAYER 2: Distant Tree Silhouettes (Blur 22px, Opacity 0.22, Low Saturation) */}
+      {/* LAYER 2: Distant Alpine Mountain & Pine Silhouettes (Blur 24px, Opacity 0.28, Low Saturation) */}
       <div
         className="env-layer layer-2-distant-trees"
         style={{
           position: 'absolute',
           inset: '-5%',
-          filter: 'blur(22px) grayscale(65%)',
-          opacity: 0.24,
+          filter: 'blur(24px) grayscale(65%)',
+          opacity: 0.28,
         }}
       >
         <svg viewBox="0 0 1400 750" width="100%" height="100%" preserveAspectRatio="none">
-          <path d="M0 750 L0 300 Q260 160 520 280 T1040 220 T1400 320 L1400 750 Z" fill="#182723" />
+          {/* Alpine Mountain & Pine Ridge Outline */}
+          <path d="M0 750 L0 320 L120 240 L240 340 L380 210 L520 330 L700 180 L880 300 L1040 200 L1200 310 L1400 250 L1400 750 Z" fill="#182723" />
         </svg>
       </div>
 
-      {/* LAYER 3: Deep Background Fog Layer */}
+      {/* LAYER 3: Deep Background Fog Layer (Opacity 0.40) */}
       <div
         className="env-layer layer-3-deep-fog"
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at 50% 35%, rgba(168, 184, 177, 0.16) 0%, rgba(83, 111, 97, 0.05) 60%, transparent 85%)',
+          background: 'radial-gradient(ellipse at 50% 35%, rgba(168, 184, 177, 0.18) 0%, rgba(83, 111, 97, 0.05) 60%, transparent 85%)',
           filter: 'blur(25px)',
-          opacity: 0.40,
+          opacity: 0.42,
         }}
       />
 
-      {/* LAYER 4: Mid-Distance Trees (Blur 8px, Opacity 0.45) */}
+      {/* LAYER 4: Mid-Distance Pine Forest Rows (Blur 8px, Opacity 0.48, #536F61 Forest) */}
       <div
         className="env-layer layer-4-mid-trees"
         style={{
           position: 'absolute',
           inset: '-2%',
           filter: 'blur(8px) grayscale(45%)',
-          opacity: 0.45,
+          opacity: 0.48,
         }}
       >
         <svg viewBox="0 0 1400 750" width="100%" height="100%" preserveAspectRatio="none">
-          <path d="M-40 750 L-40 380 Q320 260 680 370 T1380 310 L1440 750 Z" fill="#202F2A" />
+          {/* Vertical Dense Pine Tree Silhouettes */}
+          <path d="M-40 750 L-40 380 L60 280 L140 400 L240 290 L340 420 L460 310 L580 430 L700 290 L820 440 L940 320 L1060 450 L1180 300 L1300 420 L1440 350 L1440 750 Z" fill="#202F2A" />
         </svg>
       </div>
 
@@ -354,7 +359,7 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'radial-gradient(circle at 25% 45%, rgba(168, 184, 177, 0.16) 0%, transparent 60%)',
+            background: 'radial-gradient(circle at 25% 45%, rgba(168, 184, 177, 0.18) 0%, transparent 60%)',
             filter: 'blur(28px)',
             animationDuration: `${(38 / motionSpeedScale).toFixed(1)}s`,
           }}
@@ -365,7 +370,7 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'radial-gradient(circle at 75% 55%, rgba(195, 209, 202, 0.12) 0%, transparent 58%)',
+            background: 'radial-gradient(circle at 75% 55%, rgba(195, 209, 202, 0.14) 0%, transparent 58%)',
             filter: 'blur(30px)',
             animationDuration: `${(52 / motionSpeedScale).toFixed(1)}s`,
           }}
@@ -376,25 +381,26 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'radial-gradient(circle at 50% 30%, rgba(168, 184, 177, 0.10) 0%, transparent 65%)',
+            background: 'radial-gradient(circle at 50% 30%, rgba(168, 184, 177, 0.12) 0%, transparent 65%)',
             filter: 'blur(24px)',
             animationDuration: `${(78 / motionSpeedScale).toFixed(1)}s`,
           }}
         />
       </div>
 
-      {/* LAYER 6: Foreground Branches (Blur 4px, Opacity 0.52) */}
+      {/* LAYER 6: Foreground Pine Branches (Blur 4px, Opacity 0.55) */}
       <div
         className="env-layer layer-6-foreground-branches"
         style={{
           position: 'absolute',
           inset: '-2%',
           filter: 'blur(4px)',
-          opacity: 0.52,
+          opacity: 0.55,
         }}
       >
         <svg viewBox="0 0 1400 750" width="100%" height="100%" preserveAspectRatio="none">
-          <path d="M0 0 L260 0 C200 160 130 260 0 320 Z M1400 520 Q1220 600 1140 750 L1400 750 Z" fill="#15231F" />
+          {/* Sharp Pine Needle Corner Branches */}
+          <path d="M0 0 L280 0 C220 180 140 280 0 340 Z M1400 500 Q1200 580 1100 750 L1400 750 Z" fill="#15231F" />
         </svg>
       </div>
     </div>

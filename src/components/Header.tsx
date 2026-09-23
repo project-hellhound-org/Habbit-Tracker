@@ -54,8 +54,9 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onToggl
     <header
       style={{
         height: 'var(--header-height)',
-        background: 'rgba(20, 47, 36, 0.75)',
-        backdropFilter: 'blur(16px)',
+        background: 'var(--card-bg)',
+        backdropFilter: 'var(--glass-blur)',
+        WebkitBackdropFilter: 'var(--glass-blur)',
         borderBottom: '1px solid var(--border-color)',
         display: 'flex',
         alignItems: 'center',
@@ -64,6 +65,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onToggl
         position: 'sticky',
         top: 0,
         zIndex: 90,
+        transition: 'background 3.0s cubic-bezier(0.22, 1, 0.36, 1)',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column' }}>

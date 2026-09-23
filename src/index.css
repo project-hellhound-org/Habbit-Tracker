@@ -509,6 +509,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+  background: transparent;
 }
 
 .view-header {
@@ -534,11 +535,14 @@ main {
 }
 
 .hero-stat-card {
-  background: linear-gradient(135deg, rgba(20, 47, 36, 0.95) 0%, rgba(25, 61, 47, 0.88) 100%);
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-xl);
   padding: 2rem 2.25rem;
   box-shadow: 0 16px 45px -8px rgba(0, 0, 0, 0.45);
+  transition: background 3.0s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-stat-number {
@@ -564,12 +568,12 @@ main {
   z-index: 100;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, rgba(13, 34, 26, 0.95) 0%, rgba(20, 47, 36, 0.92) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-right: 1px solid var(--border-color);
   box-shadow: 6px 0 25px rgba(0, 0, 0, 0.25);
-  transition: width var(--motion-medium) var(--ease-fluid);
+  transition: width var(--motion-medium) var(--ease-fluid), background 3.0s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sidebar-nav-item {
