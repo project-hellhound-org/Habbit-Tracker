@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, ForestTheme } from '../db/schema';
 import { resetAllDataToInitialState } from '../db/seed';
 import { getAISettings, saveAISettings, testAIConnection, maskApiKey } from '../services/aiProviderService';
-import { Download, Trash2, Sparkles, Lock, ShieldAlert, KeyRound, Eye, EyeOff, CheckCircle2, AlertCircle, Palette } from 'lucide-react';
+import { Download, Upload, Trash2, Sparkles, Lock, ShieldAlert, KeyRound, Eye, EyeOff, CheckCircle2, AlertCircle, Palette } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
   const settings = useLiveQuery(() => db.settings.get('default'));
@@ -24,7 +24,8 @@ export const SettingsView: React.FC = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [verifyPasswordPrompt, setVerifyPasswordPrompt] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [pendingAction, setPendingAction] = useState<'clear_db' | 'export_data' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'clear_db' | 'export_data' | 'import_data' | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Vendor-Agnostic AI Configuration: Local (Ollama) vs Cloud (Generic API)
   const [aiMode, setAiMode] = useState<'local' | 'cloud'>(aiSettingsLive?.mode || 'local');
@@ -162,10 +163,17 @@ export const SettingsView: React.FC = () => {
     setTestResult(res);
   };
 
-  const handleTriggerProtectedAction = (action: 'clear_db' | 'export_data') => {
+  const handleTriggerProtectedAction = (action: 'clear_db' | 'export_data' | 'import_data') => {
     setPendingAction(action);
     setVerifyPasswordPrompt('');
     setPasswordError('');
+
+    const masterPassword = settings?.appPassword || appPasswordInput;
+    if (!masterPassword && action === 'import_data') {
+      fileInputRef.current?.click();
+      return;
+    }
+
     setIsPasswordModalOpen(true);
   };
 
@@ -184,16 +192,140 @@ export const SettingsView: React.FC = () => {
       alert('Database cleared successfully! All tables reset.');
       window.location.reload();
     } else if (pendingAction === 'export_data') {
-      const habitsData = await db.habits.toArray();
-      const tasksData = await db.tasks.toArray();
-      const exportJson = JSON.stringify({ habits: habitsData, tasks: tasksData }, null, 2);
+      const fullBackup = {
+        version: 1,
+        app: 'Habit OS',
+        exportedAt: new Date().toISOString(),
+        habits: await db.habits.toArray(),
+        habitLogs: await db.habitLogs.toArray(),
+        tasks: await db.tasks.toArray(),
+        subtasks: await db.subtasks.toArray(),
+        projects: await db.projects.toArray(),
+        goals: await db.goals.toArray(),
+        journalEntries: await db.journalEntries.toArray(),
+        dailyReviews: await db.dailyReviews.toArray(),
+        categories: await db.categories.toArray(),
+        tags: await db.tags.toArray(),
+        settings: await db.settings.toArray(),
+        aiConversations: await db.aiConversations.toArray(),
+        aiMessages: await db.aiMessages.toArray(),
+        aiSettings: await db.aiSettings.toArray(),
+      };
+      const exportJson = JSON.stringify(fullBackup, null, 2);
       const blob = new Blob([exportJson], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `HabitOS_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `HabitOS_Full_Backup_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
+      URL.revokeObjectURL(url);
+    } else if (pendingAction === 'import_data') {
+      fileInputRef.current?.click();
     }
+  };
+
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const content = e.target?.result as string;
+        if (!content) {
+          alert('Failed to read backup file: File is empty.');
+          return;
+        }
+
+        const data = JSON.parse(content);
+        if (!data || typeof data !== 'object') {
+          alert('Invalid backup file format: Root JSON must be an object.');
+          return;
+        }
+
+        const knownKeys = ['habits', 'habitLogs', 'tasks', 'subtasks', 'projects', 'goals', 'journalEntries', 'dailyReviews', 'categories', 'tags', 'settings', 'aiConversations', 'aiMessages', 'aiSettings'];
+        const hasValidTable = knownKeys.some((k) => Array.isArray(data[k]));
+
+        if (!hasValidTable) {
+          alert('Invalid backup file format: No recognized Habit OS database tables found in the JSON file.');
+          return;
+        }
+
+        const confirmRestore = window.confirm(
+          'Restoring backup will replace existing database records. Are you sure you want to proceed?'
+        );
+        if (!confirmRestore) return;
+
+        await db.transaction('rw', db.tables, async () => {
+          if (Array.isArray(data.habits)) {
+            await db.habits.clear();
+            if (data.habits.length > 0) await db.habits.bulkPut(data.habits);
+          }
+          if (Array.isArray(data.habitLogs)) {
+            await db.habitLogs.clear();
+            if (data.habitLogs.length > 0) await db.habitLogs.bulkPut(data.habitLogs);
+          }
+          if (Array.isArray(data.tasks)) {
+            await db.tasks.clear();
+            if (data.tasks.length > 0) await db.tasks.bulkPut(data.tasks);
+          }
+          if (Array.isArray(data.subtasks)) {
+            await db.subtasks.clear();
+            if (data.subtasks.length > 0) await db.subtasks.bulkPut(data.subtasks);
+          }
+          if (Array.isArray(data.projects)) {
+            await db.projects.clear();
+            if (data.projects.length > 0) await db.projects.bulkPut(data.projects);
+          }
+          if (Array.isArray(data.goals)) {
+            await db.goals.clear();
+            if (data.goals.length > 0) await db.goals.bulkPut(data.goals);
+          }
+          if (Array.isArray(data.journalEntries)) {
+            await db.journalEntries.clear();
+            if (data.journalEntries.length > 0) await db.journalEntries.bulkPut(data.journalEntries);
+          }
+          if (Array.isArray(data.dailyReviews)) {
+            await db.dailyReviews.clear();
+            if (data.dailyReviews.length > 0) await db.dailyReviews.bulkPut(data.dailyReviews);
+          }
+          if (Array.isArray(data.categories)) {
+            await db.categories.clear();
+            if (data.categories.length > 0) await db.categories.bulkPut(data.categories);
+          }
+          if (Array.isArray(data.tags)) {
+            await db.tags.clear();
+            if (data.tags.length > 0) await db.tags.bulkPut(data.tags);
+          }
+          if (Array.isArray(data.settings)) {
+            await db.settings.clear();
+            if (data.settings.length > 0) await db.settings.bulkPut(data.settings);
+          }
+          if (Array.isArray(data.aiConversations)) {
+            await db.aiConversations.clear();
+            if (data.aiConversations.length > 0) await db.aiConversations.bulkPut(data.aiConversations);
+          }
+          if (Array.isArray(data.aiMessages)) {
+            await db.aiMessages.clear();
+            if (data.aiMessages.length > 0) await db.aiMessages.bulkPut(data.aiMessages);
+          }
+          if (Array.isArray(data.aiSettings)) {
+            await db.aiSettings.clear();
+            if (data.aiSettings.length > 0) await db.aiSettings.bulkPut(data.aiSettings);
+          }
+        });
+
+        alert('Backup data restored successfully! The application will now reload to apply all restored data.');
+        window.location.reload();
+      } catch (err: any) {
+        console.error('Import error:', err);
+        alert(`Failed to import backup data: ${err?.message || 'Invalid JSON syntax'}`);
+      } finally {
+        if (event.target) event.target.value = '';
+      }
+    };
+
+    reader.readAsText(file);
   };
 
   return (
@@ -612,14 +744,25 @@ export const SettingsView: React.FC = () => {
           Database extraction and total deletion tasks are protected by master password verification.
         </p>
 
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.25rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
           <button className="btn btn-secondary" onClick={() => handleTriggerProtectedAction('export_data')} style={{ padding: '0.65rem 1.25rem' }}>
             <Download size={16} /> Extract Data Backup (JSON)
+          </button>
+          <button className="btn btn-secondary" onClick={() => handleTriggerProtectedAction('import_data')} style={{ padding: '0.65rem 1.25rem' }}>
+            <Upload size={16} /> Restore Data Backup (JSON)
           </button>
           <button className="btn btn-danger" onClick={() => handleTriggerProtectedAction('clear_db')} style={{ padding: '0.65rem 1.25rem' }}>
             <Trash2 size={16} /> Clear Entire Database
           </button>
         </div>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileImport}
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+        />
       </div>
 
       {/* Password Verification Modal */}
@@ -631,7 +774,14 @@ export const SettingsView: React.FC = () => {
             </div>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Master Password Verification Required</h3>
             <p className="subtitle" style={{ fontSize: '0.9rem' }}>
-              Enter your master security password to execute: <strong>{pendingAction === 'clear_db' ? 'Clear Entire Database' : 'Extract Data Backup'}</strong>.
+              Enter your master security password to execute:{' '}
+              <strong>
+                {pendingAction === 'clear_db'
+                  ? 'Clear Entire Database'
+                  : pendingAction === 'export_data'
+                  ? 'Extract Data Backup'
+                  : 'Restore Data Backup'}
+              </strong>.
             </p>
 
             <input

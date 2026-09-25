@@ -99,12 +99,13 @@ The environment engine operates persistently across all views and can be configu
    - **Motion Speed (0–100%)**: Multiplier modifying environmental animation velocity.
    - **Mist/Rain Density (0–100%)**: Adjusts droplet count for Rain Forest or fog layer opacity and particle density for Foggy Mist Forest.
 
-### Terminal Executable Launcher
+### Database Administration & Backup Security
 
-The application installs a terminal binary `Habit` registered in user binary paths (`~/.local/bin/Habit`). You can invoke the software directly from any command prompt:
-```bash
-Habit
-```
+Habit OS provides local-first data backup, extraction, and restoration capabilities:
+
+- **Full Data Backup Extraction (JSON)**: Exports complete IndexedDB application state—including habits, habit logs, tasks, subtasks, projects, goals, journal entries, daily reviews, categories, tags, settings, and AI history—into a structured JSON backup file (`HabitOS_Full_Backup_YYYY-MM-DD.json`).
+- **Data Backup Restoration (JSON)**: Restores previously exported backup files into new or reset instances of Habit OS. Supports both full database backups and legacy habit/task backups with atomic IndexedDB transactions and schema validation.
+- **Master Password Security**: Database extraction, restoration, and total deletion operations are protected by Master Password verification when enabled.
 
 ---
 
