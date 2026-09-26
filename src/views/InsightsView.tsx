@@ -196,6 +196,15 @@ export const InsightsView: React.FC = () => {
     (c.title || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const activitySuggestions = [
+    { label: '🌿 Habit Focus', prompt: 'Which habit needs the most attention today?' },
+    { label: '🔥 Streak Audit', prompt: 'Analyze my 30-day habit streak consistency' },
+    { label: '🎯 Overdue Risks', prompt: 'What are my top critical overdue task risks?' },
+    { label: '📊 Workload Audit', prompt: 'Summarize my scheduled workload for today' },
+    { label: '⚡ Energy & Focus', prompt: 'Evaluate my focus efficiency & energy patterns' },
+    { label: '🏆 Daily Summary', prompt: 'Give me a comprehensive daily productivity audit' },
+  ];
+
   const activeMode = aiSettings?.mode === 'cloud' ? 'Generic Cloud API' : 'Local Engine (Ollama)';
   const activeModel = aiSettings?.model || (aiSettings?.mode === 'cloud' ? 'gpt-4o-mini' : 'llama3.1');
 
@@ -307,10 +316,10 @@ export const InsightsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main High-Prominence Workspace Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '1.25rem', alignItems: 'start' }}>
+      {/* Main High-Prominence Desktop Workspace Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '1.25rem', height: 'calc(100vh - var(--header-height) - 40px)', minHeight: '680px' }}>
         {/* Sidebar: Conversation Sessions */}
-        <aside className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
+        <aside className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', minHeight: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <MessageSquare size={18} style={{ color: 'var(--accent-secondary)' }} /> Analysis Sessions
@@ -329,7 +338,7 @@ export const InsightsView: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', maxHeight: '520px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', overflowY: 'auto', flex: 1 }}>
             {filteredConversations.map((c) => (
               <div
                 key={c.id}
@@ -360,11 +369,31 @@ export const InsightsView: React.FC = () => {
         </aside>
 
         {/* Primary Interactive Insight Console */}
-        <main className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', padding: '1.75rem', gap: '1.25rem', minWidth: 0 }}>
-          {/* Active Chat Conversation Feed - Enlarges Dynamically With Elements */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <main className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', padding: '1.5rem 1.75rem', minWidth: 0, minHeight: 0 }}>
+          {/* Activity Diagnostic Suggestion Box */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+            <span className="subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, color: 'var(--accent-secondary)', fontSize: '0.875rem' }}>
+              <Sparkles size={16} /> Activity Diagnostic Suggestions — Ask Chatbot:
+            </span>
+            <div style={{ display: 'flex', gap: '0.65rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+              {activitySuggestions.map((s) => (
+                <button
+                  key={s.label}
+                  className="btn btn-secondary btn-xs"
+                  onClick={() => handleSendMessage(s.prompt)}
+                  title={s.prompt}
+                  style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.95rem', fontSize: '0.825rem', borderRadius: 'var(--radius-sm)', background: 'rgba(11, 38, 27, 0.6)', border: '1px solid var(--border-color)', fontWeight: 600 }}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Chat Conversation Feed */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {activeMessages.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '280px', color: 'var(--text-muted)', gap: '1rem', textAlign: 'center', padding: '2.5rem 2rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', gap: '1rem', textAlign: 'center', padding: '2rem' }}>
                 <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(87, 185, 120, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(141, 217, 160, 0.25)' }}>
                   <Sparkles size={36} style={{ color: 'var(--accent-secondary)' }} />
                 </div>
@@ -390,30 +419,30 @@ export const InsightsView: React.FC = () => {
                   <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--border-color)' }}>
                     {msg.sender === 'user' ? <User size={20} style={{ color: 'var(--bg-primary)' }} /> : <Bot size={20} style={{ color: 'var(--accent-secondary)' }} />}
                   </div>
-                  <div style={{ padding: '1.15rem 1.4rem', borderRadius: 'var(--radius-md)', background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-secondary)', color: msg.sender === 'user' ? '#FFFFFF' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.975rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+                  <div style={{ padding: '1.15rem 1.4rem', borderRadius: 'var(--radius-md)', background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-secondary)', color: msg.sender === 'user' ? '#FFFFFF' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', boxShadow: '0 4px 18px rgba(0,0,0,0.22)' }}>
                     {msg.text}
                   </div>
                 </div>
               ))
             )}
-            {isLoading && <span className="subtitle" style={{ fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--accent-secondary)' }}>
-              <Activity size={16} className="animate-spin" /> Smart Engine calculating metrics and formulating response...
+            {isLoading && <span className="subtitle" style={{ fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-secondary)', fontSize: '0.9rem' }}>
+              <Activity size={18} className="animate-spin" /> Smart Engine analyzing activity metrics and formulation response...
             </span>}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Prominent Input Console */}
-          <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} style={{ display: 'flex', gap: '0.85rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)' }}>
+          {/* Prominent Desktop Input Console */}
+          <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} style={{ display: 'flex', gap: '1rem', paddingTop: '1.1rem', borderTop: '1px solid var(--border-color)' }}>
             <input
               type="text"
               className="form-input"
-              style={{ flex: 1, fontSize: '1rem', padding: '0.9rem 1.25rem', borderRadius: 'var(--radius-md)' }}
-              placeholder="Query Smart AI Insight Engine..."
+              style={{ flex: 1, fontSize: '1rem', padding: '0.95rem 1.25rem', borderRadius: 'var(--radius-md)' }}
+              placeholder="Ask chatbot about your habits, tasks, streaks, or focus activities..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               disabled={isLoading}
             />
-            <button type="submit" className="btn btn-primary" disabled={isLoading || !inputMessage.trim()} style={{ padding: '0.9rem 1.75rem', fontSize: '1rem', borderRadius: 'var(--radius-md)' }}>
+            <button type="submit" className="btn btn-primary" disabled={isLoading || !inputMessage.trim()} style={{ padding: '0.95rem 1.8rem', fontSize: '1rem', borderRadius: 'var(--radius-md)', gap: '0.5rem' }}>
               <Send size={18} /> Evaluate
             </button>
           </form>
