@@ -24,7 +24,8 @@ export const SettingsView: React.FC = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [verifyPasswordPrompt, setVerifyPasswordPrompt] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [pendingAction, setPendingAction] = useState<'clear_db' | 'export_data' | 'import_data' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'clear_db' | 'export_data' | 'import_data' | 'unlock_security' | null>(null);
+  const [isSecurityUnlocked, setIsSecurityUnlocked] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Vendor-Agnostic AI Configuration: Local (Ollama) vs Cloud (Generic API)
@@ -163,7 +164,7 @@ export const SettingsView: React.FC = () => {
     setTestResult(res);
   };
 
-  const handleTriggerProtectedAction = (action: 'clear_db' | 'export_data' | 'import_data') => {
+  const handleTriggerProtectedAction = (action: 'clear_db' | 'export_data' | 'import_data' | 'unlock_security') => {
     setPendingAction(action);
     setVerifyPasswordPrompt('');
     setPasswordError('');
@@ -171,6 +172,11 @@ export const SettingsView: React.FC = () => {
     const masterPassword = settings?.appPassword || appPasswordInput;
     if (!masterPassword && action === 'import_data') {
       fileInputRef.current?.click();
+      return;
+    }
+
+    if (!masterPassword && action === 'unlock_security') {
+      setIsSecurityUnlocked(true);
       return;
     }
 
@@ -221,6 +227,8 @@ export const SettingsView: React.FC = () => {
       URL.revokeObjectURL(url);
     } else if (pendingAction === 'import_data') {
       fileInputRef.current?.click();
+    } else if (pendingAction === 'unlock_security') {
+      setIsSecurityUnlocked(true);
     }
   };
 
@@ -695,44 +703,69 @@ export const SettingsView: React.FC = () => {
         <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <KeyRound size={20} /> User Profile & Master Password Security
         </h3>
-        <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1.25rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-            <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 600 }}>User Profile Name</label>
-              <input type="text" className="form-input" value={userName} onChange={(e) => setUserName(e.target.value)} />
-            </div>
 
-            <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 600 }}>New Master Security Password</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Enter new master password..."
-                value={appPasswordInput}
-                onChange={(e) => setAppPasswordInput(e.target.value)}
-              />
+        {settings?.appPassword && !isSecurityUnlocked ? (
+          <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(11, 38, 27, 0.6)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <strong style={{ fontSize: '1.05rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Lock size={18} style={{ color: 'var(--warning)' }} /> Profile Credentials Locked
+                </strong>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+                  User Profile Name (<strong>{settings.userName || 'User'}</strong>) and Master Password are hidden. Authentication is required to unlock security settings.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => handleTriggerProtectedAction('unlock_security')}
+                style={{ padding: '0.65rem 1.25rem', gap: '0.5rem' }}
+              >
+                <Lock size={16} /> Unlock Profile & Security Settings
+              </button>
             </div>
           </div>
+        ) : (
+          <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>User Profile Name</label>
+                <input type="text" className="form-input" value={userName} onChange={(e) => setUserName(e.target.value)} />
+              </div>
 
-          {settings?.appPassword && appPasswordInput !== settings.appPassword && (
-            <div className="form-group" style={{ maxWidth: '440px' }}>
-              <label className="form-label" style={{ color: 'var(--danger)', fontWeight: 600 }}>Confirm Current Password (Required to update password)</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Enter current password..."
-                value={currentPasswordInput}
-                onChange={(e) => setCurrentPasswordInput(e.target.value)}
-              />
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Master Security Password</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="Enter new master password..."
+                  value={appPasswordInput}
+                  onChange={(e) => setAppPasswordInput(e.target.value)}
+                />
+              </div>
             </div>
-          )}
 
-          {passwordUpdateError && <span style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{passwordUpdateError}</span>}
+            {settings?.appPassword && appPasswordInput !== settings.appPassword && (
+              <div className="form-group" style={{ maxWidth: '440px' }}>
+                <label className="form-label" style={{ color: 'var(--danger)', fontWeight: 600 }}>Confirm Current Password (Required to update password)</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="Enter current password..."
+                  value={currentPasswordInput}
+                  onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                />
+              </div>
+            )}
 
-          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '0.75rem 1.5rem', fontSize: '0.95rem' }}>
-            Save Profile & Forest Preferences
-          </button>
-        </form>
+            {passwordUpdateError && <span style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{passwordUpdateError}</span>}
+
+            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '0.75rem 1.5rem', fontSize: '0.95rem' }}>
+              Save Profile & Forest Preferences
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Protected Database Administration */}
@@ -780,7 +813,9 @@ export const SettingsView: React.FC = () => {
                   ? 'Clear Entire Database'
                   : pendingAction === 'export_data'
                   ? 'Extract Data Backup'
-                  : 'Restore Data Backup'}
+                  : pendingAction === 'import_data'
+                  ? 'Restore Data Backup'
+                  : 'Unlock Profile & Security Settings'}
               </strong>.
             </p>
 

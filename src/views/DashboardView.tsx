@@ -134,11 +134,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab }) =>
         className="liquid-panel flip-card-item"
         onClick={() => setActiveTab('insights')}
         style={{
-          padding: '1.25rem 1.5rem',
-          background: 'linear-gradient(135deg, rgba(16, 47, 34, 0.9) 0%, rgba(22, 58, 41, 0.8) 100%)',
+          padding: '1.6rem 2rem',
+          background: 'linear-gradient(135deg, rgba(16, 47, 34, 0.95) 0%, rgba(22, 58, 41, 0.85) 100%)',
           border: '1.5px solid var(--accent-primary)',
           borderRadius: 'var(--radius-md)',
-          boxShadow: '0 4px 20px rgba(47, 143, 91, 0.15)',
+          boxShadow: '0 8px 30px rgba(47, 143, 91, 0.22)',
           cursor: 'pointer',
           display: 'flex',
           justifyContent: 'space-between',
@@ -146,38 +146,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab }) =>
           transition: 'all 200ms ease',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <div
             style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '12px',
+              width: '56px',
+              height: '56px',
+              borderRadius: '14px',
               background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#FFFFFF',
-              boxShadow: '0 4px 12px rgba(87, 185, 120, 0.3)',
+              boxShadow: '0 6px 18px rgba(87, 185, 120, 0.35)',
+              flexShrink: 0,
             }}
           >
-            <Sparkles size={24} />
+            <Sparkles size={28} />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 700 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 800 }}>
                 Smart AI Insight Engine
               </strong>
-              <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '10px', background: 'rgba(87, 185, 120, 0.2)', color: 'var(--accent-secondary)', fontWeight: 700 }}>
-                Zero-Latency Active
+              <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(87, 185, 120, 0.2)', color: 'var(--accent-secondary)', fontWeight: 700 }}>
+                &lt; 5s Fast Streaming
               </span>
             </div>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.15rem 0 0 0' }}>
+            <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
               Real-time cognitive pattern evaluation, focus metrics diagnostic, and habit streak optimization copilot.
             </p>
           </div>
         </div>
-        <button className="btn btn-primary btn-sm" style={{ gap: '0.4rem', whiteSpace: 'nowrap' }}>
-          Launch Insight Engine <ArrowRight size={14} />
+        <button className="btn btn-primary" style={{ gap: '0.5rem', padding: '0.75rem 1.4rem', fontSize: '0.925rem', whiteSpace: 'nowrap' }}>
+          Launch Insight Engine <ArrowRight size={16} />
         </button>
       </div>
 

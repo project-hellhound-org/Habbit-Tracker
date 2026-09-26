@@ -131,21 +131,33 @@ export const InsightsView: React.FC = () => {
       const abortController = new AbortController();
       abortRef.current = abortController;
 
-      const response = await queryAIAssistant(text, undefined, abortController.signal);
+      const assistantMsgId = `msg-${Date.now() + 1}`;
       const assistantMsg: AIMessage = {
-        id: `msg-${Date.now() + 1}`,
+        id: assistantMsgId,
         conversationId: activeConvId,
         sender: 'assistant',
-        text: response.text,
+        text: '...',
         timestamp: new Date().toISOString(),
+      };
+      await db.aiMessages.add(assistantMsg);
+
+      const response = await queryAIAssistant(
+        text,
+        undefined,
+        abortController.signal,
+        async (chunkText) => {
+          await db.aiMessages.update(assistantMsgId, { text: chunkText });
+        }
+      );
+
+      await db.aiMessages.update(assistantMsgId, {
+        text: response.text,
         metadata: {
           actionCards: response.actionCards,
           suggestedPrompts: response.suggestedPrompts,
           metricsUsed: response.metricsUsed,
         },
-      };
-
-      await db.aiMessages.add(assistantMsg);
+      });
     } catch (err: any) {
     } finally {
       setIsLoading(false);
@@ -297,14 +309,14 @@ export const InsightsView: React.FC = () => {
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Model & Latency
               </span>
-              <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{activeModel} (3–10s)</strong>
+              <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{activeModel} (&lt; 5s Fast)</strong>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main High-Prominence Workspace Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.25rem', height: 'calc(100vh - var(--header-height) - 200px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '1.25rem', height: 'calc(100vh - var(--header-height) - 150px)', minHeight: '580px' }}>
         {/* Sidebar: Conversation Sessions */}
         <aside className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', minHeight: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -153,16 +153,39 @@ export const CalendarView: React.FC = () => {
             <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
           </div>
 
-          {/* Month Grid */}
+          {/* Month Grid with Integrated Heatmap */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
             {days.map((day) => {
               const dateStr = format(day, 'yyyy-MM-dd');
 
               const dayTasks = tasks.filter((t) => t.dueDate === dateStr || t.endDate === dateStr);
               const dayHabitLogs = habitLogs.filter((l) => l.date === dateStr && l.status === 'completed');
+              const dayCompletedTasks = tasks.filter((t) => t.completedAt?.startsWith(dateStr));
+
+              const habitScore = habits.length > 0 ? (dayHabitLogs.length / habits.length) * 100 : 0;
+              const taskScore = dayTasks.length > 0 ? (dayCompletedTasks.length / dayTasks.length) * 100 : dayCompletedTasks.length > 0 ? 80 : 0;
+              const dayScore = Math.round(habits.length > 0 ? habitScore : taskScore);
 
               const isSelected = isSameDay(day, selectedDate);
               const isCurrentMonthDay = isSameMonth(day, currentMonth);
+
+              const getCellBackground = () => {
+                if (!isCurrentMonthDay) return 'rgba(0,0,0,0.15)';
+                if (isSelected) return 'linear-gradient(135deg, rgba(46, 94, 68, 0.75) 0%, rgba(22, 58, 41, 0.9) 100%)';
+                if (dayScore === 0) return 'rgba(13, 34, 26, 0.7)';
+                if (dayScore <= 30) return 'linear-gradient(135deg, rgba(85, 107, 96, 0.35) 0%, rgba(13, 34, 26, 0.7) 100%)';
+                if (dayScore <= 60) return 'linear-gradient(135deg, rgba(230, 168, 23, 0.28) 0%, rgba(13, 34, 26, 0.7) 100%)';
+                if (dayScore <= 80) return 'linear-gradient(135deg, rgba(232, 106, 51, 0.3) 0%, rgba(13, 34, 26, 0.7) 100%)';
+                return 'linear-gradient(135deg, rgba(66, 152, 103, 0.4) 0%, rgba(13, 34, 26, 0.7) 100%)';
+              };
+
+              const getHeatBadgeColor = () => {
+                if (dayScore === 0) return 'rgba(255,255,255,0.1)';
+                if (dayScore <= 30) return '#556B60';
+                if (dayScore <= 60) return '#E6A817';
+                if (dayScore <= 80) return '#E86A33';
+                return '#429867';
+              };
 
               return (
                 <div
@@ -170,32 +193,43 @@ export const CalendarView: React.FC = () => {
                   onClick={() => setSelectedDate(day)}
                   style={{
                     minHeight: '105px',
-                    padding: '0.6rem',
+                    padding: '0.65rem',
                     borderRadius: 'var(--radius-md)',
-                    background: isSelected ? 'rgba(46, 94, 68, 0.4)' : isCurrentMonthDay ? 'rgba(13, 34, 26, 0.7)' : 'rgba(0,0,0,0.15)',
-                    border: isSelected ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
+                    background: getCellBackground(),
+                    border: isSelected ? '2px solid var(--accent-secondary)' : dayScore > 0 ? `1px solid ${getHeatBadgeColor()}88` : '1px solid var(--border-color)',
                     opacity: isCurrentMonthDay ? 1 : 0.35,
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
+                    justifyContent: 'space-between',
                     gap: '0.35rem',
                     transition: 'all 200ms ease',
+                    boxShadow: isSelected ? '0 0 14px rgba(87, 185, 120, 0.3)' : 'none',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                       {format(day, 'd')}
                     </span>
-                    {dayHabitLogs.length > 0 && (
-                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-secondary)' }} />
+                    {dayScore > 0 && (
+                      <span style={{ fontSize: '0.625rem', padding: '0.1rem 0.4rem', borderRadius: '8px', background: getHeatBadgeColor(), color: '#FFFFFF', fontWeight: 700 }}>
+                        {dayScore}%
+                      </span>
                     )}
                   </div>
 
-                  {dayTasks.length > 0 && (
-                    <span style={{ fontSize: '0.725rem', background: 'rgba(20, 47, 36, 0.9)', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {dayTasks.length} task(s)
-                    </span>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                    {dayHabitLogs.length > 0 && (
+                      <span style={{ fontSize: '0.7rem', color: '#57B978', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#57B978' }} /> {dayHabitLogs.length} habit(s)
+                      </span>
+                    )}
+                    {dayTasks.length > 0 && (
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(7, 26, 19, 0.75)', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {dayTasks.length} task(s)
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}

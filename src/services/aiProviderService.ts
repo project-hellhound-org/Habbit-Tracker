@@ -218,7 +218,7 @@ CRITICAL RULES:
     headers['Authorization'] = `Bearer ${settings.apiKey.trim()}`;
   }
 
-  // Disable deep thinking/reasoning and set low token limits for 3-10s local response times
+  // Disable deep thinking/reasoning and set low token limits for fast sub-5s local response times
   const requestBody: any = {
     model,
     messages: [
@@ -226,13 +226,14 @@ CRITICAL RULES:
       { role: 'user', content: userQuery },
     ],
     temperature: isLocal ? 0.3 : (settings.temperature || 0.7),
-    max_tokens: isLocal ? 256 : 1024,
+    max_tokens: isLocal ? 200 : 800,
+    stream: true,
   };
 
   if (isLocal) {
     requestBody.options = {
-      num_predict: 256,
-      num_ctx: 2048,
+      num_predict: 200,
+      num_ctx: 1024,
       temperature: 0.3,
       thinking: false,
       reasoning: false,
@@ -252,14 +253,76 @@ CRITICAL RULES:
       throw new Error(`API Provider Error (${response.status}): ${errText.slice(0, 160)}`);
     }
 
-    const data = await response.json();
-    const responseText =
-      data.choices?.[0]?.message?.content ||
-      data.content?.[0]?.text ||
-      data.response ||
-      'No text response generated from model.';
+    let responseText = '';
 
-    if (onStreamChunk) onStreamChunk(responseText);
+    if (response.body && typeof response.body.getReader === 'function') {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (trimmed.startsWith('data: ')) {
+            const dataStr = trimmed.slice(6);
+            if (dataStr === '[DONE]') continue;
+            try {
+              const json = JSON.parse(dataStr);
+              const delta = json.choices?.[0]?.delta?.content || json.choices?.[0]?.text || '';
+              if (delta) {
+                responseText += delta;
+                if (onStreamChunk) onStreamChunk(responseText);
+              }
+            } catch (e) {}
+          } else {
+            try {
+              const json = JSON.parse(trimmed);
+              const chunkContent = json.response || json.message?.content || json.choices?.[0]?.delta?.content || '';
+              if (chunkContent) {
+                responseText += chunkContent;
+                if (onStreamChunk) onStreamChunk(responseText);
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (buffer.trim()) {
+        const trimmed = buffer.trim();
+        const dataStr = trimmed.startsWith('data: ') ? trimmed.slice(6) : trimmed;
+        if (dataStr !== '[DONE]') {
+          try {
+            const json = JSON.parse(dataStr);
+            const delta = json.response || json.message?.content || json.choices?.[0]?.delta?.content || '';
+            if (delta) {
+              responseText += delta;
+              if (onStreamChunk) onStreamChunk(responseText);
+            }
+          } catch (e) {}
+        }
+      }
+    } else {
+      const data = await response.json();
+      responseText =
+        data.choices?.[0]?.message?.content ||
+        data.content?.[0]?.text ||
+        data.response ||
+        'No text response generated from model.';
+      if (onStreamChunk) onStreamChunk(responseText);
+    }
+
+    if (!responseText.trim()) {
+      responseText = 'No text response generated from model.';
+    }
 
     return {
       text: responseText,
