@@ -278,61 +278,6 @@ export const AnalyticsView: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* 3. SYSTEM PERFORMANCE HEATMAP */}
-      <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem' }}>
-        <div>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-            <Flame size={20} style={{ color: 'var(--warning)' }} /> 30-Day Activity Heatmap
-          </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>Daily completion intensity heat map based on habit & task completion thresholds.</p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.6rem', padding: '0.5rem 0' }}>
-          {trendData.map((pt, idx) => {
-            const color = getHeatmapColor(pt.habitCompletionPct);
-            return (
-              <div
-                key={idx}
-                title={`${pt.displayLabel}: ${pt.habitCompletionPct}% Habit Completion, ${pt.taskCompletionCount} Tasks`}
-                style={{
-                  aspectRatio: '1',
-                  borderRadius: '8px',
-                  background: color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  color: '#FFFFFF',
-                  cursor: 'pointer',
-                  boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
-                  transition: 'transform 200ms ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.15)')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-              >
-                {pt.displayLabel.split(' ')[1]}
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', color: 'var(--text-secondary)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#556B60' }} /> 25% (Grey)
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E6A817' }} /> 50% (Yellow)
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E86A33' }} /> 75% (Orange)
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#429867' }} /> 100% (Green)
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -640,8 +640,8 @@ main {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 540px;
-  max-width: 94vw;
+  width: 650px;
+  max-width: 96vw;
   z-index: 1000;
   display: flex;
   flex-direction: column;
