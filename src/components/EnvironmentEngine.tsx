@@ -1,57 +1,57 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ForestTheme, AppSettings } from '../db/schema';
+import rainForestBg from '../assets/backgrounds/rain-forest.jpg';
+import foggyMistBg from '../assets/backgrounds/foggy-mist.jpg';
+
+// Lightweight 2D value-noise (hash + bilinear + smoothstep). No external deps.
+// Drives the foggy-mist scene's fog-bank drift so mist moves with an organic,
+// low-frequency undulation instead of a fixed sinusoidal loop.
+const hash2D = (x: number, y: number): number => {
+  const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return s - Math.floor(s);
+};
+
+const valueNoise2D = (x: number, y: number): number => {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+
+  const a = hash2D(ix, iy);
+  const b = hash2D(ix + 1, iy);
+  const c = hash2D(ix, iy + 1);
+  const d = hash2D(ix + 1, iy + 1);
+
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+
+  return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
+};
 
 interface EnvironmentEngineProps {
   theme: ForestTheme;
   settings?: AppSettings;
 }
 
+// NOTE on architecture (read this before touching the crossfade):
+// The background is two real photographs (rain-forest.jpg / foggy-mist.jpg),
+// always both mounted, stacked on top of each other. Switching themes is
+// nothing more than flipping which one has opacity 1 — the crossfade itself
+// is a plain CSS `transition: opacity`, handled entirely by the browser's
+// compositor. There is deliberately NO React state machine (no
+// currentTheme/previousTheme/transitionProgress, no requestAnimationFrame
+// loop) driving the dissolve. An earlier version tracked the crossfade with
+// JS state, which had two compounding bugs: (1) the effect that owned the
+// animation listed its own output state as a dependency, so React tore the
+// animation down after a single frame, leaving the outgoing theme stuck at
+// full opacity; and (2) the particle canvas effect also depended on that
+// same animated progress value, so it was destroyed and recreated on every
+// single animation frame during a transition, resetting rain/fog particles
+// mid-flight. Letting CSS own the dissolve removes both failure modes
+// entirely — there's no per-frame state update for anything to race with.
 export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, settings }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Active theme and transition crossfade state
-  const [currentTheme, setCurrentTheme] = useState<ForestTheme>(theme);
-  const [previousTheme, setPreviousTheme] = useState<ForestTheme | null>(null);
-  const [transitionProgress, setTransitionProgress] = useState<number>(1); // 1 = full currentTheme, 0 = previousTheme
-
-  useEffect(() => {
-    if (theme !== currentTheme) {
-      setPreviousTheme(currentTheme);
-      setCurrentTheme(theme);
-      setTransitionProgress(0);
-
-      const startTime = performance.now();
-      const transitionDuration = 3000; // 3.0s cubic-bezier(0.22, 1, 0.36, 1) transition
-
-      let animationFrameId: number;
-
-      const animateTransition = (now: number) => {
-        const elapsed = now - startTime;
-        const progress = Math.min(1, elapsed / transitionDuration);
-        
-        // Apply cubic-bezier(0.22, 1, 0.36, 1) easing
-        const t = progress;
-        const easeProgress = t < 1 ? 1 - Math.pow(1 - t, 3) : 1; // Smooth cubic ease out approximation
-        
-        setTransitionProgress(easeProgress);
-
-        if (progress < 1) {
-          animationFrameId = requestAnimationFrame(animateTransition);
-        } else {
-          setPreviousTheme(null);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(animateTransition);
-
-      return () => {
-        cancelAnimationFrame(animationFrameId);
-      };
-    }
-    return undefined;
-  }, [theme, currentTheme]);
-
-  // Extract settings values with robust fallbacks
   const animationEnabled = settings?.animationEnabled !== false;
   const ambientMotion = settings?.ambientMotionEnabled !== false;
 
@@ -59,16 +59,18 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
   const environmentOpacity = rawIntensity / 100;
 
   const rawSpeed = settings?.motionSpeed ?? 50;
-  const motionSpeedScale = Math.max(0.05, rawSpeed / 50); // 0% = paused/near static, 50% = 1.0x, 100% = 2.0x
+  const motionSpeedScale = Math.max(0.05, rawSpeed / 50); // 50% = 1.0x
 
   const rawDensity = settings?.mistRainDensity ?? 60;
-  const densityScale = Math.max(0.1, rawDensity / 60);
+  const densityScale = Math.max(0.1, rawDensity / 60); // 60% = 1.0x
 
-  // Canvas Animation Engine for Particles (Rain Droplets & Foggy Moisture)
+  // Canvas particle layer: rain streaks + forest-floor ripples for rain_forest,
+  // noise-driven fog banks + floating moisture for foggy_mist. Only the active
+  // theme's particles are drawn — the photo crossfade underneath carries the
+  // visual transition, so there's no need to blend two particle systems too.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -81,22 +83,46 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
     };
-
     window.addEventListener('resize', handleResize);
 
-    // Rain Particles Data Structure (Rain Forest)
-    const numRainDrops = Math.round(90 * densityScale);
+    // --- Rain Forest: heavy, elongated, slow-falling streaks ---
+    const numRainDrops = Math.round(55 * densityScale);
     const rainDrops = Array.from({ length: numRainDrops }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      length: 14 + Math.random() * 24,
-      speed: (6.5 + Math.random() * 8.5) * (animationEnabled ? motionSpeedScale : 0),
-      opacity: 0.03 + Math.random() * 0.09, // Strict 0.03-0.12 opacity range
-      angle: -0.12 + Math.random() * 0.04,
+      length: 34 + Math.random() * 46,
+      speed: (2.4 + Math.random() * 3.2) * (animationEnabled ? motionSpeedScale : 0),
+      opacity: 0.06 + Math.random() * 0.15,
+      angle: -0.08 + Math.random() * 0.03,
+      width: 1.3 + Math.random() * 1.3,
+      glinting: Math.random() < 0.22,
+      glintPhase: Math.random() * Math.PI * 2,
     }));
 
-    // Moisture Particles Data Structure (Foggy Mist Forest)
-    const numMoistureParticles = Math.round(60 * densityScale);
+    // Forest-floor water pools with steady, rhythmic ripple rings.
+    const waterPools = Array.from({ length: 4 }, (_, i) => ({
+      x: width * (0.12 + i * 0.24 + Math.random() * 0.06),
+      y: height * (0.82 + Math.random() * 0.1),
+      rx: 46 + Math.random() * 34,
+      ry: 13 + Math.random() * 7,
+      nextRippleAt: performance.now() + Math.random() * 1200,
+      rippleInterval: (1000 + Math.random() * 500) / Math.max(0.3, densityScale),
+      ripples: [] as { r: number; alpha: number }[],
+    }));
+
+    // --- Foggy Mist: noise-driven drifting fog banks + floating moisture ---
+    const numFogBanks = Math.round(7 * densityScale);
+    const fogBanks = Array.from({ length: numFogBanks }, () => ({
+      baseX: Math.random() * width,
+      baseY: height * (0.28 + Math.random() * 0.62),
+      radius: 170 + Math.random() * 230,
+      seedX: Math.random() * 1000,
+      seedY: Math.random() * 1000,
+      seedD: Math.random() * 1000,
+      driftRange: 70 + Math.random() * 90,
+    }));
+
+    const numMoistureParticles = Math.round(50 * densityScale);
     const moistureParticles = Array.from({ length: numMoistureParticles }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -107,43 +133,107 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
       driftY: (-0.1 + Math.random() * 0.2) * (animationEnabled && ambientMotion ? motionSpeedScale : 0),
     }));
 
-    // Render Loop
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Render Rain Particles if active theme or previous theme is rain_forest
-      const isRainActive = currentTheme === 'rain_forest' || previousTheme === 'rain_forest';
-      if (isRainActive && animationEnabled) {
-        const rainWeight = currentTheme === 'rain_forest' ? transitionProgress : 1 - transitionProgress;
-        ctx.strokeStyle = `rgba(141, 217, 160, ${0.45 * rainWeight * environmentOpacity})`;
-        ctx.lineWidth = 1.5;
+      if (theme === 'rain_forest') {
+        const baseAlpha = environmentOpacity;
+        const now = performance.now();
 
-        for (let i = 0; i < rainDrops.length; i++) {
-          const d = rainDrops[i];
+        if (animationEnabled) {
+          for (let i = 0; i < rainDrops.length; i++) {
+            const d = rainDrops[i];
+            const tailX = d.x + Math.sin(d.angle) * d.length;
+            const tailY = d.y + Math.cos(d.angle) * d.length;
+
+            const trail = ctx.createLinearGradient(d.x, d.y, tailX, tailY);
+            trail.addColorStop(0, `rgba(200, 232, 210, ${d.opacity * baseAlpha})`);
+            trail.addColorStop(0.65, `rgba(200, 232, 210, ${d.opacity * baseAlpha * 0.5})`);
+            trail.addColorStop(1, 'rgba(200, 232, 210, 0)');
+            ctx.strokeStyle = trail;
+            ctx.lineWidth = d.width;
+            ctx.beginPath();
+            ctx.moveTo(d.x, d.y);
+            ctx.lineTo(tailX, tailY);
+            ctx.stroke();
+
+            if (d.glinting) {
+              const glintAlpha = (0.5 + 0.5 * Math.sin(now * 0.004 + d.glintPhase)) * d.opacity * baseAlpha * 1.6;
+              ctx.beginPath();
+              ctx.fillStyle = `rgba(236, 250, 240, ${glintAlpha})`;
+              ctx.arc(d.x, d.y, d.width * 0.85, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            d.y += d.speed;
+            d.x += Math.sin(d.angle) * d.speed;
+
+            if (d.y > height + d.length + 10) {
+              d.y = -d.length - 10;
+              d.x = Math.random() * width;
+            }
+          }
+        }
+
+        for (const pool of waterPools) {
+          ctx.save();
+          ctx.globalAlpha = 0.32 * baseAlpha;
+          ctx.fillStyle = 'rgba(4, 14, 10, 0.65)';
           ctx.beginPath();
-          ctx.moveTo(d.x, d.y);
-          ctx.lineTo(d.x + Math.sin(d.angle) * d.length, d.y + Math.cos(d.angle) * d.length);
-          ctx.stroke();
+          ctx.ellipse(pool.x, pool.y, pool.rx, pool.ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
 
-          d.y += d.speed;
-          d.x += Math.sin(d.angle) * d.speed;
+          if (animationEnabled && now >= pool.nextRippleAt) {
+            pool.ripples.push({ r: 2, alpha: 0.5 });
+            pool.nextRippleAt = now + pool.rippleInterval;
+          }
 
-          if (d.y > height + 30) {
-            d.y = -30;
-            d.x = Math.random() * width;
+          for (let ri = pool.ripples.length - 1; ri >= 0; ri--) {
+            const rip = pool.ripples[ri];
+            ctx.strokeStyle = `rgba(210, 235, 220, ${rip.alpha * baseAlpha})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(pool.x, pool.y, rip.r, rip.r * (pool.ry / pool.rx), 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            if (animationEnabled) {
+              rip.r += 0.55 * motionSpeedScale;
+              rip.alpha -= 0.012 * motionSpeedScale;
+            }
+            if (rip.alpha <= 0 || rip.r > pool.rx * 1.5) {
+              pool.ripples.splice(ri, 1);
+            }
           }
         }
       }
 
-      // Render Moisture Particles if active theme or previous theme is foggy_mist
-      const isMistActive = currentTheme === 'foggy_mist' || previousTheme === 'foggy_mist';
-      if (isMistActive) {
-        const mistWeight = currentTheme === 'foggy_mist' ? transitionProgress : 1 - transitionProgress;
-        ctx.fillStyle = '#C3D1CA';
+      if (theme === 'foggy_mist') {
+        if (animationEnabled) {
+          const t = performance.now() * 0.00006 * motionSpeedScale;
+          for (const fb of fogBanks) {
+            const nx = valueNoise2D(t + fb.seedX, fb.seedX * 0.6) - 0.5;
+            const ny = valueNoise2D(fb.seedY * 0.6, t + fb.seedY) - 0.5;
+            const density = valueNoise2D(t * 1.4 + fb.seedD, fb.seedD * 0.4);
 
+            const x = fb.baseX + nx * fb.driftRange * 2;
+            const y = fb.baseY + ny * fb.driftRange;
+            const alpha = (0.05 + density * 0.18) * environmentOpacity;
+
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, fb.radius);
+            grad.addColorStop(0, `rgba(210, 222, 216, ${alpha})`);
+            grad.addColorStop(1, 'rgba(210, 222, 216, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, fb.radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.fillStyle = '#DCE6E1';
         for (let i = 0; i < moistureParticles.length; i++) {
           const pt = moistureParticles[i];
-          ctx.globalAlpha = pt.alpha * mistWeight * environmentOpacity;
+          ctx.globalAlpha = pt.alpha * environmentOpacity;
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
           ctx.fill();
@@ -172,333 +262,137 @@ export const EnvironmentEngine: React.FC<EnvironmentEngineProps> = ({ theme, set
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [currentTheme, previousTheme, transitionProgress, animationEnabled, ambientMotion, motionSpeedScale, densityScale, environmentOpacity]);
+  }, [theme, animationEnabled, ambientMotion, motionSpeedScale, densityScale, environmentOpacity]);
 
-  // Helper renderers for Layered SVG / CSS Environmental Depth
-  const renderRainForestLayers = (opacityWeight: number) => (
+  const crossfadeMs = 3000;
+
+  return (
     <div
-      className="rain-forest-layered-scene"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        opacity: opacityWeight * environmentOpacity,
-        pointerEvents: 'none',
-        transition: 'opacity 0.2s ease-out',
-      }}
+      className="environment-engine-container"
+      style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}
     >
-      {/* LAYER 1: Deep Forest Base (#071A13) */}
+      {/* Rain Forest photograph */}
       <div
-        className="env-layer layer-1-base"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(ellipse at 50% 30%, #09231A 0%, #071A13 65%, #04100C 100%)',
-        }}
-      />
-
-      {/* LAYER 2: Large Distant Foliage Silhouettes (Blur 35px, Opacity 0.32) */}
-      <div
-        className={`env-layer layer-2-distant-foliage ${animationEnabled && ambientMotion ? 'animate-foliage-slow-drift' : ''}`}
-        style={{
-          position: 'absolute',
-          inset: '-8%',
-          filter: 'blur(35px)',
-          opacity: 0.32,
-          animationDuration: `${(45 / motionSpeedScale).toFixed(1)}s`,
-        }}
-      >
-        <svg viewBox="0 0 1400 800" width="100%" height="100%" preserveAspectRatio="none">
-          <path d="M0 800 L0 340 Q250 180 500 310 T1000 240 T1400 360 L1400 800 Z" fill="#0F3827" />
-          <path d="M-50 800 L-50 420 Q300 270 650 380 T1250 320 L1450 800 Z" fill="#0B2C1F" opacity="0.8" />
-        </svg>
-      </div>
-
-      {/* LAYER 3: Midground Tropical Foliage (Monstera & Palm FRONDS, blur 10px, opacity 0.45) */}
-      <div
-        className="env-layer layer-3-midground-foliage"
+        className={`env-photo-layer ${animationEnabled && ambientMotion ? 'animate-photo-drift-a' : ''}`}
         style={{
           position: 'absolute',
           inset: '-4%',
-          filter: 'blur(10px)',
-          opacity: 0.45,
+          backgroundImage: `url(${rainForestBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: theme === 'rain_forest' ? environmentOpacity : 0,
+          transition: `opacity ${crossfadeMs}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+          animationDuration: `${(48 / motionSpeedScale).toFixed(1)}s`,
         }}
-      >
-        <svg viewBox="0 0 1400 800" width="100%" height="100%" preserveAspectRatio="none">
-          <path d="M0 800 Q180 520 380 620 T880 540 T1400 700 L1400 800 Z" fill="#102F22" />
-          <path d="M-20 800 Q220 580 480 660 T980 590 L1420 800 Z" fill="#163A29" opacity="0.75" />
-          {/* Detailed Palm Frond Silhouettes */}
-          <path d="M50 800 C150 650 300 580 450 630 C300 680 180 750 50 800 Z" fill="#2F8F5B" opacity="0.35" />
-          <path d="M1350 800 C1250 640 1100 570 950 620 C1100 670 1220 740 1350 800 Z" fill="#2F8F5B" opacity="0.35" />
-        </svg>
-      </div>
+      />
 
-      {/* LAYER 4: Upper Canopy Silhouettes (Top-Left, Top-Right, Upper-Center framing UI) */}
+      {/* Foggy Mist photograph */}
       <div
-        className="env-layer layer-4-canopy"
+        className={`env-photo-layer ${animationEnabled && ambientMotion ? 'animate-photo-drift-b' : ''}`}
         style={{
           position: 'absolute',
-          top: '-8%',
-          left: '-5%',
-          right: '-5%',
-          height: '65%',
-          filter: 'blur(12px)',
-          opacity: 0.48,
+          inset: '-4%',
+          backgroundImage: `url(${foggyMistBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: theme === 'foggy_mist' ? environmentOpacity : 0,
+          transition: `opacity ${crossfadeMs}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+          animationDuration: `${(60 / motionSpeedScale).toFixed(1)}s`,
         }}
-      >
-        <svg viewBox="0 0 1400 600" width="100%" height="100%" preserveAspectRatio="none">
-          <path d="M-50 -20 Q180 180 420 50 T900 150 T1350 20 L1450 -50 L-50 -50 Z" fill="#12402C" />
-          <path d="M-20 -30 Q280 130 580 40 T1100 110 L1420 -30 L-20 -30 Z" fill="#164A34" opacity="0.75" />
-        </svg>
-      </div>
+      />
 
-      {/* LAYER 5: Diffused Sunlight Rays (opacity: 0.04 -> 0.10, 8-15s duration) */}
+      {/* Vignette so UI text/cards keep contrast against either photo */}
       <div
-        className={`env-layer layer-5-sunlight ${animationEnabled && ambientMotion ? 'animate-sunlight-sweep' : ''}`}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(ellipse at 50% 38%, rgba(0,0,0,0) 30%, rgba(3, 10, 7, 0.55) 100%), linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 70%, rgba(0,0,0,0.35) 100%)',
+        }}
+      />
+
+      {/* Diffused sunlight rays — rain_forest only, "moving light rays" from spec */}
+      <div
+        className={`env-layer ${animationEnabled && ambientMotion ? 'animate-sunlight-sweep' : ''}`}
         style={{
           position: 'absolute',
           top: '-30%',
           left: '10%',
           width: '75%',
           height: '160%',
-          background: 'radial-gradient(ellipse at 50% 20%, rgba(141, 217, 160, 0.12) 0%, rgba(87, 185, 120, 0.03) 50%, transparent 75%)',
+          background:
+            'radial-gradient(ellipse at 50% 20%, rgba(210, 235, 200, 0.22) 0%, rgba(140, 200, 150, 0.06) 50%, transparent 75%)',
           transform: 'rotate(-14deg)',
-          pointerEvents: 'none',
+          opacity: theme === 'rain_forest' ? 1 : 0,
+          transition: `opacity ${crossfadeMs}ms ease`,
           animationDuration: `${(13 / motionSpeedScale).toFixed(1)}s`,
         }}
       />
 
-      {/* LAYER 7: Foreground Tropical Foliage (Blurred leaves around screen edges, blur 5px) */}
+      {/* Ground mist clinging to the tree bases — rain_forest only */}
       <div
-        className={`env-layer layer-7-foreground-leaves ${animationEnabled && ambientMotion ? 'animate-leaf-spring-oscillation' : ''}`}
+        className={animationEnabled && ambientMotion ? 'animate-ground-mist-pulse' : ''}
         style={{
           position: 'absolute',
-          inset: '-2%',
-          filter: 'blur(5px)',
-          opacity: 0.42,
-          animationDuration: `${(18 / motionSpeedScale).toFixed(1)}s`,
-        }}
-      >
-        <svg viewBox="0 0 1400 800" width="100%" height="100%" preserveAspectRatio="none">
-          {/* Bottom-Left & Top-Right Monstera / Palm Leaf Silhouettes */}
-          <path d="M0 0 C220 110 320 260 170 380 Q-40 260 0 0 Z M1400 800 C1180 680 1060 540 1220 400 Q1420 520 1400 800 Z" fill="#09261B" />
-        </svg>
-      </div>
-    </div>
-  );
-
-  const renderFoggyMistLayers = (opacityWeight: number) => (
-    <div
-      className="foggy-mist-layered-scene"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        opacity: opacityWeight * environmentOpacity,
-        pointerEvents: 'none',
-        transition: 'opacity 0.2s ease-out',
-      }}
-    >
-      {/* LAYER 1: Dark Gray-Green Base (#111A18) */}
-      <div
-        className="env-layer layer-1-mist-base"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(ellipse at 50% 40%, #15221F 0%, #111A18 70%, #0B1210 100%)',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: '38%',
+          background:
+            'linear-gradient(to top, rgba(190, 220, 200, 0.28) 0%, rgba(170, 208, 185, 0.1) 45%, transparent 100%)',
+          filter: 'blur(18px)',
+          opacity: theme === 'rain_forest' ? 0.7 : 0,
+          transition: `opacity ${crossfadeMs}ms ease`,
+          animationDuration: `${(22 / motionSpeedScale).toFixed(1)}s`,
         }}
       />
 
-      {/* LAYER 2: Distant Alpine Mountain & Pine Silhouettes (Blur 24px, Opacity 0.28, Low Saturation) */}
-      <div
-        className="env-layer layer-2-distant-trees"
-        style={{
-          position: 'absolute',
-          inset: '-5%',
-          filter: 'blur(24px) grayscale(65%)',
-          opacity: 0.28,
-        }}
-      >
-        <svg viewBox="0 0 1400 750" width="100%" height="100%" preserveAspectRatio="none">
-          {/* Alpine Mountain & Pine Ridge Outline */}
-          <path d="M0 750 L0 320 L120 240 L240 340 L380 210 L520 330 L700 180 L880 300 L1040 200 L1200 310 L1400 250 L1400 750 Z" fill="#182723" />
-        </svg>
-      </div>
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, zIndex: 1 }} />
 
-      {/* LAYER 3: Deep Background Fog Layer (Opacity 0.40) */}
-      <div
-        className="env-layer layer-3-deep-fog"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(ellipse at 50% 35%, rgba(168, 184, 177, 0.18) 0%, rgba(83, 111, 97, 0.05) 60%, transparent 85%)',
-          filter: 'blur(25px)',
-          opacity: 0.42,
-        }}
-      />
-
-      {/* LAYER 4: Mid-Distance Pine Forest Rows (Blur 8px, Opacity 0.48, #536F61 Forest) */}
-      <div
-        className="env-layer layer-4-mid-trees"
-        style={{
-          position: 'absolute',
-          inset: '-2%',
-          filter: 'blur(8px) grayscale(45%)',
-          opacity: 0.48,
-        }}
-      >
-        <svg viewBox="0 0 1400 750" width="100%" height="100%" preserveAspectRatio="none">
-          {/* Vertical Dense Pine Tree Silhouettes */}
-          <path d="M-40 750 L-40 380 L60 280 L140 400 L240 290 L340 420 L460 310 L580 430 L700 290 L820 440 L940 320 L1060 450 L1180 300 L1300 420 L1440 350 L1440 750 Z" fill="#202F2A" />
-        </svg>
-      </div>
-
-      {/* LAYER 5: 3 Independent Unsynchronized Moving Fog Slices */}
-      <div className="env-layer layer-5-fog-slices" style={{ position: 'absolute', inset: 0 }}>
-        {/* Fog A: Left to Right (38s) */}
-        <div
-          className={`fog-slice slice-fog-a ${animationEnabled && ambientMotion ? 'animate-fog-slice-a' : ''}`}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'radial-gradient(circle at 25% 45%, rgba(168, 184, 177, 0.18) 0%, transparent 60%)',
-            filter: 'blur(28px)',
-            animationDuration: `${(38 / motionSpeedScale).toFixed(1)}s`,
-          }}
-        />
-        {/* Fog B: Right to Left (52s) */}
-        <div
-          className={`fog-slice slice-fog-b ${animationEnabled && ambientMotion ? 'animate-fog-slice-b' : ''}`}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'radial-gradient(circle at 75% 55%, rgba(195, 209, 202, 0.14) 0%, transparent 58%)',
-            filter: 'blur(30px)',
-            animationDuration: `${(52 / motionSpeedScale).toFixed(1)}s`,
-          }}
-        />
-        {/* Fog C: Vertical Movement (78s) */}
-        <div
-          className={`fog-slice slice-fog-c ${animationEnabled && ambientMotion ? 'animate-fog-slice-c' : ''}`}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'radial-gradient(circle at 50% 30%, rgba(168, 184, 177, 0.12) 0%, transparent 65%)',
-            filter: 'blur(24px)',
-            animationDuration: `${(78 / motionSpeedScale).toFixed(1)}s`,
-          }}
-        />
-      </div>
-
-      {/* LAYER 6: Foreground Pine Branches (Blur 4px, Opacity 0.55) */}
-      <div
-        className="env-layer layer-6-foreground-branches"
-        style={{
-          position: 'absolute',
-          inset: '-2%',
-          filter: 'blur(4px)',
-          opacity: 0.55,
-        }}
-      >
-        <svg viewBox="0 0 1400 750" width="100%" height="100%" preserveAspectRatio="none">
-          {/* Sharp Pine Needle Corner Branches */}
-          <path d="M0 0 L280 0 C220 180 140 280 0 340 Z M1400 500 Q1200 580 1100 750 L1400 750 Z" fill="#15231F" />
-        </svg>
-      </div>
-    </div>
-  );
-
-  return (
-    <div
-      className="environment-engine-container"
-      aria-hidden="true"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-        zIndex: 0,
-      }}
-    >
-      {/* Current Theme Render Layer */}
-      {currentTheme === 'rain_forest'
-        ? renderRainForestLayers(transitionProgress)
-        : renderFoggyMistLayers(transitionProgress)}
-
-      {/* Previous Theme Render Layer during 3.0s Crossfade */}
-      {previousTheme &&
-        (previousTheme === 'rain_forest'
-          ? renderRainForestLayers(1 - transitionProgress)
-          : renderFoggyMistLayers(1 - transitionProgress))}
-
-      {/* HTML5 Canvas Engine for Rain Droplets & Moisture Particles */}
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      />
-
-      {/* Animation Keyframe Definitions */}
       <style>{`
-        @keyframes foliageSlowDrift {
-          0%, 100% { transform: scale(1) translate(0, 0); }
-          50% { transform: scale(1.025) translate(-10px, 8px); }
+        .env-photo-layer {
+          background-repeat: no-repeat;
         }
 
-        .animate-foliage-slow-drift {
-          animation: foliageSlowDrift 36s ease-in-out infinite;
+        @keyframes photoDriftA {
+          0% { transform: scale(1) translate(0, 0); }
+          50% { transform: scale(1.06) translate(-1%, -1.5%); }
+          100% { transform: scale(1) translate(0, 0); }
+        }
+        .animate-photo-drift-a {
+          animation: photoDriftA 48s ease-in-out infinite;
+        }
+
+        @keyframes photoDriftB {
+          0% { transform: scale(1.02) translate(0, 0); }
+          50% { transform: scale(1.07) translate(1.2%, 0.5%); }
+          100% { transform: scale(1.02) translate(0, 0); }
+        }
+        .animate-photo-drift-b {
+          animation: photoDriftB 60s ease-in-out infinite;
         }
 
         @keyframes sunlightSweep {
-          0%, 100% { opacity: 0.04; transform: rotate(-14deg) translateY(0); }
-          50% { opacity: 0.10; transform: rotate(-11deg) translateY(-20px); }
+          0%, 100% { opacity: 0.6; transform: rotate(-14deg) translateX(0); }
+          50% { opacity: 1; transform: rotate(-14deg) translateX(3%); }
         }
-
         .animate-sunlight-sweep {
-          animation: sunlightSweep 14s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+          animation: sunlightSweep 13s ease-in-out infinite;
         }
 
-        @keyframes leafSpringOscillation {
-          0%, 100% { transform: translateX(0px); }
-          25% { transform: translateX(12px); }
-          50% { transform: translateX(-8px); }
-          75% { transform: translateX(9px); }
+        @keyframes groundMistPulse {
+          0%, 100% { opacity: 0.55; transform: translateY(0); }
+          50% { opacity: 0.85; transform: translateY(-6px); }
         }
-
-        .animate-leaf-spring-oscillation {
-          animation: leafSpringOscillation 20s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
+        .animate-ground-mist-pulse {
+          animation: groundMistPulse 22s ease-in-out infinite;
         }
-
-        @keyframes fogSliceA {
-          0% { transform: translateX(-7%); }
-          50% { transform: translateX(7%); }
-          100% { transform: translateX(-7%); }
-        }
-
-        @keyframes fogSliceB {
-          0% { transform: translateX(7%); }
-          50% { transform: translateX(-7%); }
-          100% { transform: translateX(7%); }
-        }
-
-        @keyframes fogSliceC {
-          0%, 100% { transform: translateY(0%); }
-          50% { transform: translateY(-5%); }
-        }
-
-        .animate-fog-slice-a { animation: fogSliceA 38s ease-in-out infinite; }
-        .animate-fog-slice-b { animation: fogSliceB 52s ease-in-out infinite; }
-        .animate-fog-slice-c { animation: fogSliceC 78s ease-in-out infinite; }
 
         @media (prefers-reduced-motion: reduce) {
-          .animate-foliage-slow-drift,
+          .animate-photo-drift-a,
+          .animate-photo-drift-b,
           .animate-sunlight-sweep,
-          .animate-leaf-spring-oscillation,
-          .animate-fog-slice-a,
-          .animate-fog-slice-b,
-          .animate-fog-slice-c {
+          .animate-ground-mist-pulse {
             animation: none !important;
           }
         }

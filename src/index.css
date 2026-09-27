@@ -17,7 +17,7 @@
   --border-color: rgba(141, 217, 160, 0.14);
   --border-hover: rgba(141, 217, 160, 0.28);
   --border-glow: rgba(141, 217, 160, 0.22);
-  --card-bg: rgba(13, 42, 29, 0.72);
+  --card-bg: rgba(13, 42, 29, 0.62);
   --glass-blur: blur(18px);
 
   /* Progress Bar Colors */
@@ -82,7 +82,7 @@
   --border-hover: rgba(141, 217, 160, 0.28);
   --border-glow: rgba(141, 217, 160, 0.22);
   --warning: #D8B45A;
-  --card-bg: rgba(13, 42, 29, 0.72);
+  --card-bg: rgba(13, 42, 29, 0.62);
   --glass-blur: blur(18px);
 }
 
@@ -104,7 +104,7 @@
   --border-hover: rgba(195, 209, 202, 0.25);
   --border-glow: rgba(195, 209, 202, 0.20);
   --warning: #D8B45A;
-  --card-bg: rgba(24, 35, 32, 0.76);
+  --card-bg: rgba(24, 35, 32, 0.64);
   --glass-blur: blur(18px);
 }
 
@@ -697,7 +697,3 @@ main {
     scroll-behavior: auto !important;
   }
 }
-
-
-
-
