@@ -193,6 +193,102 @@ export const HabitsView: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Sub-habits / Sub-topics section */}
+                {h.subHabits && h.subHabits.length > 0 && (
+                  <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                      Sub-Topics & Specific Activities:
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.6rem' }}>
+                      {h.subHabits.map((sub) => {
+                        const subState = todayLog?.subHabitsState?.[sub.id] || (sub.completed ? 'completed' : 'pending');
+                        return (
+                          <div
+                            key={sub.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '0.45rem 0.75rem',
+                              background: 'var(--bg-secondary)',
+                              borderRadius: 'var(--radius-sm)',
+                              border: subState === 'completed' ? '1px solid var(--accent-primary)' : subState === 'failed' ? '1px solid #ef4444' : '1px solid var(--border-color)',
+                            }}
+                          >
+                            <span style={{ fontSize: '0.85rem', color: subState === 'completed' ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: subState === 'completed' ? 'line-through' : 'none' }}>
+                              {sub.title}
+                            </span>
+                            <div style={{ display: 'flex', gap: '0.3rem' }}>
+                              <button
+                                type="button"
+                                className="btn btn-icon"
+                                title="Mark Completed"
+                                style={{
+                                  padding: '3px 6px',
+                                  background: subState === 'completed' ? 'var(--accent-primary)' : 'transparent',
+                                  color: subState === 'completed' ? '#fff' : 'var(--text-muted)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  border: '1px solid var(--border-color)'
+                                }}
+                                onClick={async () => {
+                                  const newState: 'completed' | 'failed' | 'pending' = subState === 'completed' ? 'pending' : 'completed';
+                                  const updatedState: Record<string, 'completed' | 'failed' | 'pending'> = { ...(todayLog?.subHabitsState || {}), [sub.id]: newState };
+                                  if (todayLog) {
+                                    await db.habitLogs.update(todayLog.id, { subHabitsState: updatedState });
+                                  } else {
+                                    await db.habitLogs.add({
+                                      id: `log-${Date.now()}`,
+                                      habitId: h.id,
+                                      date: todayStr,
+                                      status: 'partial',
+                                      value: 0.5,
+                                      subHabitsState: updatedState,
+                                      loggedAt: new Date().toISOString(),
+                                    });
+                                  }
+                                }}
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-icon"
+                                title="Mark Missed/Failed"
+                                style={{
+                                  padding: '3px 6px',
+                                  background: subState === 'failed' ? '#ef4444' : 'transparent',
+                                  color: subState === 'failed' ? '#fff' : 'var(--text-muted)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  border: '1px solid var(--border-color)'
+                                }}
+                                onClick={async () => {
+                                  const newState: 'completed' | 'failed' | 'pending' = subState === 'failed' ? 'pending' : 'failed';
+                                  const updatedState: Record<string, 'completed' | 'failed' | 'pending'> = { ...(todayLog?.subHabitsState || {}), [sub.id]: newState };
+                                  if (todayLog) {
+                                    await db.habitLogs.update(todayLog.id, { subHabitsState: updatedState });
+                                  } else {
+                                    await db.habitLogs.add({
+                                      id: `log-${Date.now()}`,
+                                      habitId: h.id,
+                                      date: todayStr,
+                                      status: 'partial',
+                                      value: 0,
+                                      subHabitsState: updatedState,
+                                      loggedAt: new Date().toISOString(),
+                                    });
+                                  }
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Progress bar */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>

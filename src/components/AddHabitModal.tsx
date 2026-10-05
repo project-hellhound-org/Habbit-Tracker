@@ -20,6 +20,8 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
   const [scheduledTime, setScheduledTime] = useState('08:00');
   const [amPm, setAmPm] = useState<'AM' | 'PM'>('AM');
   const [difficulty, setDifficulty] = useState('medium');
+  const [subHabitInput, setSubHabitInput] = useState('');
+  const [subHabits, setSubHabits] = useState<{ id: string; title: string; completed: boolean }[]>([]);
 
   const daysOfWeek = [
     { label: 'Mon', value: 1 },
@@ -41,6 +43,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
       setScheduledTime(habitToEdit.startTime || '08:00');
       setAmPm(habitToEdit.amPm || 'AM');
       setDifficulty(habitToEdit.difficulty || 'medium');
+      setSubHabits(habitToEdit.subHabits || []);
     } else {
       setName('');
       setCategory('Fitness & Health');
@@ -50,6 +53,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
       setScheduledTime('08:00');
       setAmPm('AM');
       setDifficulty('medium');
+      setSubHabits([]);
     }
   }, [habitToEdit, isOpen]);
 
@@ -63,6 +67,16 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
     } else {
       setSelectedDays([...selectedDays, dayVal].sort());
     }
+  };
+
+  const addSubHabit = () => {
+    if (!subHabitInput.trim()) return;
+    setSubHabits([...subHabits, { id: `sh-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`, title: subHabitInput.trim(), completed: false }]);
+    setSubHabitInput('');
+  };
+
+  const removeSubHabit = (id: string) => {
+    setSubHabits(subHabits.filter(s => s.id !== id));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +93,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
         startTime: scheduledTime,
         amPm,
         difficulty,
+        subHabits,
         updatedAt: new Date().toISOString(),
       });
     } else {
@@ -93,6 +108,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
         amPm,
         color: '#31563D',
         difficulty,
+        subHabits,
         archived: 0,
         createdAt: new Date().toISOString(),
       });
@@ -158,7 +174,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
                 type="text"
                 className="form-input"
                 required
-                placeholder="e.g. Morning Strength Training, Daily Reading..."
+                placeholder="e.g. Study Networking & Cybersecurity..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -174,10 +190,49 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
             </div>
           </div>
 
-          {/* Section 2: Timing & Target Schedule */}
+          {/* Section 2: Hierarchical Sub-Topics / Sub-Habits */}
           <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-              2. Schedule & Execution Time
+              2. Sub-Topics & Specific Activities (Sub-Habits)
+            </h4>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. Chapter 1 TCP/IP Handshake, Practice Labs..."
+                value={subHabitInput}
+                onChange={(e) => setSubHabitInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSubHabit();
+                  }
+                }}
+              />
+              <button type="button" className="btn btn-secondary" onClick={addSubHabit} style={{ whiteSpace: 'nowrap' }}>
+                <Plus size={16} /> Add Sub-Topic
+              </button>
+            </div>
+
+            {subHabits.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
+                {subHabits.map((sub) => (
+                  <div key={sub.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'rgba(0,0,0,0.3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>• {sub.title}</span>
+                    <button type="button" className="btn btn-icon" onClick={() => removeSubHabit(sub.id)} style={{ color: '#ef4444', padding: '2px' }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Timing & Target Schedule */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+              3. Schedule & Execution Time
             </h4>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -239,10 +294,10 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
             </div>
           </div>
 
-          {/* Section 3: Frequency Configuration */}
+          {/* Section 4: Frequency Configuration */}
           <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-              3. Frequency Rules
+              4. Frequency Rules
             </h4>
 
             <div className="form-group">

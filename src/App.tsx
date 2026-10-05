@@ -15,6 +15,9 @@ import { CalendarView } from './views/CalendarView';
 import { InsightsView } from './views/InsightsView';
 import { SettingsView } from './views/SettingsView';
 import { Leaf } from 'lucide-react';
+import { WishlistView } from './views/WishlistView';
+import { NotesView } from './views/NotesView';
+import { FinanceView } from './views/FinanceView';
 
 export type ActiveTab =
   | 'dashboard'
@@ -23,6 +26,9 @@ export type ActiveTab =
   | 'journal'
   | 'analytics'
   | 'calendar'
+  | 'finance'
+  | 'wishlist'
+  | 'notes'
   | 'insights'
   | 'settings';
 
@@ -122,6 +128,9 @@ export const App: React.FC = () => {
           {activeTab === 'journal' && <JournalView />}
           {activeTab === 'analytics' && <AnalyticsView />}
           {activeTab === 'calendar' && <CalendarView />}
+          {activeTab === 'finance' && <FinanceView />}
+          {activeTab === 'wishlist' && <WishlistView />}
+          {activeTab === 'notes' && <NotesView />}
           {activeTab === 'insights' && <InsightsView />}
           {activeTab === 'settings' && <SettingsView />}
         </main>

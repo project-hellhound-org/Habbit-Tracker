@@ -1,5 +1,12 @@
 import Dexie, { Table } from 'dexie';
 
+export interface SubHabit {
+  id: string;
+  title: string;
+  completed: boolean;
+  status?: 'completed' | 'failed' | 'pending';
+}
+
 export interface Habit {
   id: string;
   name: string;
@@ -23,6 +30,7 @@ export interface Habit {
   difficulty?: string;
   priority?: string;
   notes?: string;
+  subHabits?: SubHabit[];
   startDate?: string;
   endDate?: string;   // Defined completion timeline (deprecated/optional)
   archived: number | boolean;
@@ -37,6 +45,7 @@ export interface HabitLog {
   status: 'completed' | 'partial' | 'skipped' | 'failed';
   value: number;
   notes?: string;
+  subHabitsState?: Record<string, 'completed' | 'failed' | 'pending'>;
   loggedAt: string;
 }
 
@@ -109,6 +118,80 @@ export interface Goal {
   relatedProjectIds?: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WishlistItem {
+  id: string;
+  title: string;
+  description?: string;
+  category: 'purchase' | 'resource' | 'project' | string;
+  estimatedCost?: number;
+  url?: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'saved' | 'in_progress' | 'acquired' | 'archived';
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NoteItem {
+  id: string;
+  title: string;
+  content: string;
+  category?: string;
+  tags?: string[];
+  color?: string;
+  relatedType?: 'habit' | 'task' | 'project' | 'goal' | 'finance' | 'general';
+  relatedId?: string;
+  pinned?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinanceAccount {
+  id: string;
+  name: string;
+  type: 'cash' | 'bank' | 'upi' | 'credit_card' | 'savings' | 'investment';
+  balance: number;
+  currency: string;
+  color?: string;
+  isDefault?: boolean;
+  createdAt: string;
+}
+
+export interface FinanceTransaction {
+  id: string;
+  type: 'income' | 'expense' | 'transfer' | 'refund' | 'adjustment';
+  amount: number;
+  accountId: string;
+  toAccountId?: string;
+  category: string;
+  date: string;
+  time?: string;
+  merchant?: string;
+  paymentMethod?: string;
+  description?: string;
+  notes?: string;
+  tags?: string[];
+  createdAt: string;
+}
+
+export interface FinanceBudget {
+  id: string;
+  category: string;
+  amountLimit: number;
+  period: 'monthly' | 'weekly' | 'yearly';
+  startDate?: string;
+}
+
+export interface FinanceSavingsGoal {
+  id: string;
+  title: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: string;
+  category?: string;
+  notes?: string;
 }
 
 export interface JournalEntry {
@@ -272,10 +355,16 @@ export class HabitOSDatabase extends Dexie {
   aiConversations!: Table<AIConversation>;
   aiMessages!: Table<AIMessage>;
   aiSettings!: Table<AISettings>;
+  wishlistItems!: Table<WishlistItem>;
+  notes!: Table<NoteItem>;
+  financeAccounts!: Table<FinanceAccount>;
+  financeTransactions!: Table<FinanceTransaction>;
+  financeBudgets!: Table<FinanceBudget>;
+  financeSavingsGoals!: Table<FinanceSavingsGoal>;
 
   constructor() {
     super('HabitOSDB');
-    this.version(3).stores({
+    this.version(4).stores({
       habits: 'id, name, category, archived',
       habitLogs: 'id, habitId, date, status, [habitId+date]',
       tasks: 'id, title, status, priority, dueDate, startDate, endDate, projectId, goalId',
@@ -290,6 +379,12 @@ export class HabitOSDatabase extends Dexie {
       aiConversations: 'id, entityType, entityId, updatedAt',
       aiMessages: 'id, conversationId, timestamp',
       aiSettings: 'id',
+      wishlistItems: 'id, title, category, status, priority',
+      notes: 'id, title, category, relatedType, relatedId, pinned',
+      financeAccounts: 'id, name, type',
+      financeTransactions: 'id, type, accountId, category, date',
+      financeBudgets: 'id, category, period',
+      financeSavingsGoals: 'id, title, category'
     });
   }
 }
