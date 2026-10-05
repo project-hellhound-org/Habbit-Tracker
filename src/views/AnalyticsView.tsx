@@ -85,6 +85,14 @@ export const AnalyticsView: React.FC = () => {
         </div>
       </div>
 
+      {/* Heatmap Integration Reference */}
+      <div className="liquid-panel flip-card-item" style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(13, 34, 26, 0.55)', border: '1px solid var(--border-color)' }}>
+        <Info size={20} style={{ color: 'var(--accent-secondary)', flexShrink: 0 }} />
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>
+          <strong style={{ color: 'var(--text-primary)' }}>Integrated Activity Heatmap</strong> — The 30-day activity heatmap matrix is consolidated into the <strong style={{ color: 'var(--accent-secondary)' }}>Calendar View</strong> for unified task completion & habit intensity visualization alongside your daily schedule.
+        </p>
+      </div>
+
       {/* Top Stat Overview Cards */}
       <div className="stat-badge-grid">
         <div className="liquid-panel flip-card-item">

@@ -317,7 +317,7 @@ export const InsightsView: React.FC = () => {
       </div>
 
       {/* Main High-Prominence Desktop Workspace Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '1.25rem', height: 'calc(100vh - var(--header-height) - 40px)', minHeight: '680px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '1.25rem', height: 'calc(100vh - 160px)', minHeight: '720px' }}>
         {/* Sidebar: Conversation Sessions */}
         <aside className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', minHeight: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
