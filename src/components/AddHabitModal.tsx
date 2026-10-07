@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db, Habit } from '../db/schema';
-import { X, Plus, Save, Calendar as CalendarIcon, Clock, Sparkles } from 'lucide-react';
+import { db, Habit, SubHabit } from '../db/schema';
+import { X, Plus, Save, Calendar as CalendarIcon, Clock, Sparkles, Trash2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 
 interface AddHabitModalProps {
@@ -20,8 +20,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
   const [scheduledTime, setScheduledTime] = useState('08:00');
   const [amPm, setAmPm] = useState<'AM' | 'PM'>('AM');
   const [difficulty, setDifficulty] = useState('medium');
-  const [subHabitInput, setSubHabitInput] = useState('');
-  const [subHabits, setSubHabits] = useState<{ id: string; title: string; completed: boolean }[]>([]);
+  const [subHabits, setSubHabits] = useState<Partial<SubHabit>[]>([]);
 
   const daysOfWeek = [
     { label: 'Mon', value: 1 },
@@ -43,7 +42,9 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
       setScheduledTime(habitToEdit.startTime || '08:00');
       setAmPm(habitToEdit.amPm || 'AM');
       setDifficulty(habitToEdit.difficulty || 'medium');
-      setSubHabits(habitToEdit.subHabits || []);
+      db.subHabits.where('habitId').equals(habitToEdit.id).toArray().then(subs => {
+        setSubHabits(subs);
+      });
     } else {
       setName('');
       setCategory('Fitness & Health');
@@ -69,16 +70,6 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
     }
   };
 
-  const addSubHabit = () => {
-    if (!subHabitInput.trim()) return;
-    setSubHabits([...subHabits, { id: `sh-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`, title: subHabitInput.trim(), completed: false }]);
-    setSubHabitInput('');
-  };
-
-  const removeSubHabit = (id: string) => {
-    setSubHabits(subHabits.filter(s => s.id !== id));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -93,12 +84,27 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
         startTime: scheduledTime,
         amPm,
         difficulty,
-        subHabits,
         updatedAt: new Date().toISOString(),
       });
+      await db.subHabits.where('habitId').equals(habitToEdit.id).delete();
+      const subHabitsToAdd = subHabits.map((sh, idx) => ({
+        id: `sh-${Date.now()}-${idx}`,
+        habitId: habitToEdit.id,
+        name: sh.name || '',
+        description: sh.description,
+        order: idx,
+        targetValue: sh.targetValue ? Number(sh.targetValue) : undefined,
+        unit: sh.unit,
+        archived: false,
+        createdAt: new Date().toISOString()
+      }));
+      if (subHabitsToAdd.length > 0) {
+        await db.subHabits.bulkAdd(subHabitsToAdd as any);
+      }
     } else {
+      const newHabitId = `habit-${Date.now()}`;
       await db.habits.add({
-        id: `habit-${Date.now()}`,
+        id: newHabitId,
         name: name.trim(),
         category,
         frequencyMode,
@@ -108,10 +114,23 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
         amPm,
         color: '#31563D',
         difficulty,
-        subHabits,
         archived: 0,
         createdAt: new Date().toISOString(),
       });
+      const subHabitsToAdd = subHabits.map((sh, idx) => ({
+        id: `sh-${Date.now()}-${idx}`,
+        habitId: newHabitId,
+        name: sh.name || '',
+        description: sh.description,
+        order: idx,
+        targetValue: sh.targetValue ? Number(sh.targetValue) : undefined,
+        unit: sh.unit,
+        archived: false,
+        createdAt: new Date().toISOString()
+      }));
+      if (subHabitsToAdd.length > 0) {
+        await db.subHabits.bulkAdd(subHabitsToAdd as any);
+      }
     }
 
     onClose();
@@ -174,7 +193,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
                 type="text"
                 className="form-input"
                 required
-                placeholder="e.g. Study Networking & Cybersecurity..."
+                placeholder="e.g. Morning Strength Training, Daily Reading..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -190,49 +209,10 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
             </div>
           </div>
 
-          {/* Section 2: Hierarchical Sub-Topics / Sub-Habits */}
+          {/* Section 2: Timing & Target Schedule */}
           <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-              2. Sub-Topics & Specific Activities (Sub-Habits)
-            </h4>
-
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. Chapter 1 TCP/IP Handshake, Practice Labs..."
-                value={subHabitInput}
-                onChange={(e) => setSubHabitInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addSubHabit();
-                  }
-                }}
-              />
-              <button type="button" className="btn btn-secondary" onClick={addSubHabit} style={{ whiteSpace: 'nowrap' }}>
-                <Plus size={16} /> Add Sub-Topic
-              </button>
-            </div>
-
-            {subHabits.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
-                {subHabits.map((sub) => (
-                  <div key={sub.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'rgba(0,0,0,0.3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>• {sub.title}</span>
-                    <button type="button" className="btn btn-icon" onClick={() => removeSubHabit(sub.id)} style={{ color: '#ef4444', padding: '2px' }}>
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section 3: Timing & Target Schedule */}
-          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-              3. Schedule & Execution Time
+              2. Schedule & Execution Time
             </h4>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -294,10 +274,10 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
             </div>
           </div>
 
-          {/* Section 4: Frequency Configuration */}
+          {/* Section 3: Frequency Configuration */}
           <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-              4. Frequency Rules
+              3. Frequency Rules
             </h4>
 
             <div className="form-group">
@@ -352,6 +332,86 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({ isOpen, onClose, h
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Section 4: Sub-Habits / Sub-Topics */}
+          <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '1.1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+              4. Sub-Habits / Sub-Topics
+            </h4>
+
+            {subHabits.map((sh, idx) => (
+              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ flex: 1 }}
+                    placeholder="Sub-habit name *"
+                    value={sh.name || ''}
+                    onChange={(e) => {
+                      const newSh = [...subHabits];
+                      newSh[idx].name = e.target.value;
+                      setSubHabits(newSh);
+                    }}
+                    required
+                  />
+                  <button type="button" className="btn btn-danger btn-icon" onClick={() => {
+                    const newSh = [...subHabits];
+                    newSh.splice(idx, 1);
+                    setSubHabits(newSh);
+                  }}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Optional description"
+                  value={sh.description || ''}
+                  onChange={(e) => {
+                    const newSh = [...subHabits];
+                    newSh[idx].description = e.target.value;
+                    setSubHabits(newSh);
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="number"
+                    className="form-input"
+                    style={{ flex: 1 }}
+                    placeholder="Target Value (e.g. 10)"
+                    value={sh.targetValue || ''}
+                    onChange={(e) => {
+                      const newSh = [...subHabits];
+                      newSh[idx].targetValue = parseFloat(e.target.value) || undefined;
+                      setSubHabits(newSh);
+                    }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ flex: 1 }}
+                    placeholder="Unit (e.g. pages)"
+                    value={sh.unit || ''}
+                    onChange={(e) => {
+                      const newSh = [...subHabits];
+                      newSh[idx].unit = e.target.value;
+                      setSubHabits(newSh);
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              onClick={() => setSubHabits([...subHabits, { name: '', order: subHabits.length }])}
+            >
+              <Plus size={16} /> Add Sub-Habit
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>

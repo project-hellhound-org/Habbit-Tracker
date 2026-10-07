@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, Habit, Task, HabitLog, DailyReview } from '../db/schema';
+import { db, CalendarItem } from '../db/schema';
 import {
   format,
   startOfMonth,
@@ -12,10 +12,8 @@ import {
   isSameDay,
   addMonths,
   subMonths,
-  addDays,
-  subDays,
-  startOfDay,
-  endOfDay,
+  addWeeks,
+  subWeeks,
 } from 'date-fns';
 import {
   Calendar as CalendarIcon,
@@ -25,112 +23,37 @@ import {
   Activity,
   BookOpen,
   Clock,
-  CheckCircle2,
-  List,
-  CalendarDays,
+  Plus,
   Grid,
-  Filter,
-  Plus
+  Columns,
 } from 'lucide-react';
+import { WeekGrid } from '../components/calendar/WeekGrid';
+import { QuickCreatePopover } from '../components/calendar/QuickCreatePopover';
 
 export const CalendarView: React.FC = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
+
+  // Quick create popover state
+  const [popoverDate, setPopoverDate] = useState<Date | null>(null);
 
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
 
+  // Queries
   const tasks = useLiveQuery(() => db.tasks.toArray()) || [];
   const habits = useLiveQuery(() => db.habits.where('archived').equals(0).toArray()) || [];
   const habitLogs = useLiveQuery(() => db.habitLogs.toArray()) || [];
   const dailyReview = useLiveQuery(() => db.dailyReviews.get(selectedDateStr));
+  const calendarItems = useLiveQuery(() => db.calendarItems.toArray()) || [];
 
-  // Date boundaries for Month view
-  const monthStart = startOfMonth(currentMonth);
+  const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  const monthDays = eachDayOfInterval({ start: startDate, end: endDate });
 
-  // Date boundaries for Week view
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-  // Compute activity intensity for a specific day
-  const getDayActivity = (day: Date) => {
-    const dStr = format(day, 'yyyy-MM-dd');
-    const dayHabitLogs = habitLogs.filter((l) => l.date === dStr && l.status === 'completed');
-    const dayTasks = tasks.filter((t) => t.dueDate === dStr || t.endDate === dStr);
-    const dayCompletedTasks = tasks.filter(
-      (t) => (t.dueDate === dStr || t.endDate === dStr || t.completedAt?.startsWith(dStr)) && t.status === 'completed'
-    );
-
-    const hPct = habits.length > 0 ? (dayHabitLogs.length / habits.length) * 100 : 0;
-    const tPct = dayTasks.length > 0 ? (dayCompletedTasks.length / dayTasks.length) * 100 : dayCompletedTasks.length > 0 ? 80 : 0;
-    const score = Math.min(Math.round(habits.length > 0 ? hPct * 0.5 + tPct * 0.5 : tPct), 100);
-
-    return {
-      score,
-      habitLogsCount: dayHabitLogs.length,
-      tasksCount: dayTasks.length,
-      completedTasksCount: dayCompletedTasks.length,
-    };
-  };
-
-  // Monochromatic Heatmap Intensity Color (Lightness/opacity variations of semantic green/gray)
-  const getHeatmapStyle = (score: number, isSelected: boolean, isCurrentMonth: boolean) => {
-    if (!isCurrentMonth) {
-      return {
-        background: 'rgba(0,0,0,0.15)',
-        border: '1px solid rgba(255,255,255,0.05)',
-        opacity: 0.3,
-      };
-    }
-
-    if (isSelected) {
-      return {
-        background: 'rgba(49, 86, 61, 0.95)',
-        border: '2px solid var(--accent-secondary)',
-        boxShadow: '0 0 14px rgba(82, 118, 83, 0.4)',
-        opacity: 1,
-      };
-    }
-
-    if (score === 0) {
-      return {
-        background: 'rgba(13, 34, 26, 0.92)',
-        border: '1px solid var(--border-color)',
-        opacity: 1,
-      };
-    } else if (score <= 30) {
-      return {
-        background: 'rgba(25, 55, 38, 0.92)',
-        border: '1px solid rgba(82, 118, 83, 0.3)',
-        opacity: 1,
-      };
-    } else if (score <= 60) {
-      return {
-        background: 'rgba(35, 72, 49, 0.94)',
-        border: '1px solid rgba(82, 118, 83, 0.5)',
-        opacity: 1,
-      };
-    } else if (score <= 80) {
-      return {
-        background: 'rgba(45, 90, 60, 0.96)',
-        border: '1px solid rgba(82, 118, 83, 0.7)',
-        opacity: 1,
-      };
-    } else {
-      return {
-        background: 'rgba(55, 110, 72, 0.98)',
-        border: '1px solid var(--accent-secondary)',
-        opacity: 1,
-      };
-    }
-  };
-
-  // Inspector selected date details
   const selectedTasks = tasks.filter((t) => {
     const isDueOnDate = t.dueDate === selectedDateStr || t.endDate === selectedDateStr;
     const isCompletedOnDate = t.completedAt && t.completedAt.startsWith(selectedDateStr);
@@ -142,200 +65,260 @@ export const CalendarView: React.FC = () => {
   const totalActiveHabits = habits.length || 1;
   const completedTaskCount = selectedTasks.filter((t) => t.status === 'completed').length;
 
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const todayClick = () => {
-    const t = new Date();
-    setCurrentMonth(t);
-    setSelectedDate(t);
+  const prevPeriod = () => {
+    if (viewMode === 'month') setCurrentDate(subMonths(currentDate, 1));
+    else setCurrentDate(subWeeks(currentDate, 1));
   };
 
-  const handleHabitToggle = async (habitId: string) => {
-    const existing = await db.habitLogs.where('[habitId+date]').equals([habitId, selectedDateStr]).first();
-    if (existing) {
-      const nextStatus = existing.status === 'completed' ? 'failed' : 'completed';
-      await db.habitLogs.update(existing.id, { status: nextStatus, loggedAt: new Date().toISOString() });
-    } else {
-      await db.habitLogs.add({
-        id: `log-${Date.now()}`,
-        habitId,
-        date: selectedDateStr,
-        status: 'completed',
-        value: 1,
-        loggedAt: new Date().toISOString(),
-      });
-    }
+  const nextPeriod = () => {
+    if (viewMode === 'month') setCurrentDate(addMonths(currentDate, 1));
+    else setCurrentDate(addWeeks(currentDate, 1));
   };
 
-  const handleTaskToggle = async (task: Task) => {
-    const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
-    await db.tasks.update(task.id, {
-      status: nextStatus,
-      completedAt: nextStatus === 'completed' ? new Date().toISOString() : null,
+  // Generate 30-Day Activity Heatmap Data
+  const heatmapDays = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    const dStr = format(d, 'yyyy-MM-dd');
+    const logs = habitLogs.filter((l) => l.date === dStr && l.status === 'completed');
+    const dayTasks = tasks.filter((t) => t.dueDate === dStr || t.endDate === dStr);
+    const dayCompletedTasks = tasks.filter(
+      (t) => (t.dueDate === dStr || t.endDate === dStr || t.completedAt?.startsWith(dStr)) && t.status === 'completed'
+    );
+
+    const hPct = habits.length > 0 ? (logs.length / habits.length) * 100 : 0;
+    const tPct = dayTasks.length > 0 ? (dayCompletedTasks.length / dayTasks.length) * 100 : dayCompletedTasks.length > 0 ? 80 : 0;
+    const score = Math.min(Math.round(habits.length > 0 ? hPct * 0.5 + tPct * 0.5 : tPct), 100);
+
+    return { date: d, dateStr: dStr, score, logsCount: logs.length, tasksCount: dayCompletedTasks.length };
+  });
+
+  const getHeatmapBg = (score: number) => {
+    if (score === 0) return 'rgba(13, 34, 26, 0.6)';
+    if (score <= 30) return '#556B60';
+    if (score <= 60) return '#E6A817';
+    if (score <= 80) return '#E86A33';
+    return '#429867';
+  };
+
+  const handleSaveDraftEvent = async (eventData: any) => {
+    const newItem: CalendarItem = {
+      id: `cal-${Date.now()}`,
+      title: eventData.title || 'Untitled Event',
+      type: eventData.type,
+      start: eventData.start.toISOString(),
+      end: eventData.end.toISOString(),
+      allDay: false,
+      rrule: eventData.rrule || undefined,
+      description: eventData.desc || undefined,
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    });
+    };
+    await db.calendarItems.add(newItem);
+    setPopoverDate(null);
   };
 
   return (
-    <div className="view-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {/* Calendar Header Bar */}
-      <div
-        className="liquid-panel"
-        style={{
-          padding: '1.25rem 1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          background: 'var(--bg-secondary)',
-          opacity: 0.94,
-        }}
-      >
+    <div className="view-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', position: 'relative' }}>
+      {/* Popover overlay if draft created */}
+      {popoverDate && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <QuickCreatePopover initialDate={popoverDate} onClose={() => setPopoverDate(null)} onSave={handleSaveDraftEvent} />
+        </div>
+      )}
+
+      {/* Integrated Full-Width Activity Heatmap Bar */}
+      <div className="liquid-panel flip-card-item" style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 className="view-header-title" style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <CalendarIcon size={24} style={{ color: 'var(--accent-secondary)' }} /> Temporal Calendar Workstation
-            </h1>
-            <p className="view-header-subtitle" style={{ fontSize: '0.85rem', margin: '0.2rem 0 0 0' }}>
-              Monochromatic month grid with integrated daily completion heatmap intensity matrix.
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <Clock size={20} style={{ color: 'var(--accent-secondary)' }} /> Integrated Activity Heatmap Matrix
+            </h3>
+            <p className="subtitle" style={{ fontSize: '0.875rem', margin: '0.2rem 0 0 0' }}>
+              Monitor daily task completion & habit activity intensity in real time. Click any block to select date.
             </p>
           </div>
-
-          {/* Header Controls: Month Nav, Today, View Switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <button className="btn btn-secondary btn-icon" onClick={prevMonth} title="Previous Month">
-                <ChevronLeft size={18} />
-              </button>
-              <strong style={{ fontSize: '1.1rem', minWidth: '150px', textAlign: 'center', color: 'var(--text-primary)' }}>
-                {format(currentMonth, 'MMMM yyyy')}
-              </strong>
-              <button className="btn btn-secondary btn-icon" onClick={nextMonth} title="Next Month">
-                <ChevronRight size={18} />
-              </button>
-            </div>
-
-            <button className="btn btn-secondary" onClick={todayClick} style={{ padding: '0.45rem 0.85rem', fontSize: '0.825rem' }}>
-              Today
-            </button>
-
-            {/* View Selector */}
-            <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
-              <button
-                className={`btn ${calendarView === 'month' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem', border: 'none', borderRadius: 0 }}
-                onClick={() => setCalendarView('month')}
-              >
-                Month
-              </button>
-              <button
-                className={`btn ${calendarView === 'week' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem', border: 'none', borderRadius: 0 }}
-                onClick={() => setCalendarView('week')}
-              >
-                Week
-              </button>
-              <button
-                className={`btn ${calendarView === 'day' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem', border: 'none', borderRadius: 0 }}
-                onClick={() => setCalendarView('day')}
-              >
-                Day
-              </button>
-              <button
-                className={`btn ${calendarView === 'agenda' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem', border: 'none', borderRadius: 0 }}
-                onClick={() => setCalendarView('agenda')}
-              >
-                Agenda
-              </button>
-            </div>
+          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#556B60' }} /> Low (1-30%)</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E6A817' }} /> Medium (31-60%)</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E86A33' }} /> High (61-80%)</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#429867' }} /> Optimal (81-100%)</span>
           </div>
         </div>
 
-        {/* Compact Monochromatic Heatmap Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', fontSize: '0.775rem', color: 'var(--text-muted)' }}>
-          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Heatmap Matrix:</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(13, 34, 26, 0.92)', border: '1px solid var(--border-color)' }} /> 0% (Neutral)
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(25, 55, 38, 0.92)' }} /> 1–30% Subtle
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(35, 72, 49, 0.94)' }} /> 31–60% Medium
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(45, 90, 60, 0.96)' }} /> 61–80% High
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(55, 110, 72, 0.98)' }} /> 81–100% Optimal
-          </span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(30, 1fr)', gap: '0.4rem', overflowX: 'auto', padding: '0.35rem 0' }}>
+          {heatmapDays.map((h) => {
+            const isSel = isSameDay(h.date, selectedDate);
+            return (
+              <div
+                key={h.dateStr}
+                onClick={() => setSelectedDate(h.date)}
+                title={`${format(h.date, 'MMM d, yyyy')}: ${h.score}% intensity score (${h.logsCount} habits, ${h.tasksCount} tasks)`}
+                style={{
+                  height: '42px',
+                  borderRadius: '6px',
+                  background: getHeatmapBg(h.score),
+                  border: isSel ? '2px solid var(--text-primary)' : '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.725rem',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  transition: 'all 150ms ease',
+                  boxShadow: isSel ? '0 0 12px rgba(255,255,255,0.45)' : 'none',
+                }}
+              >
+                {format(h.date, 'd')}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Main Grid + Date Breakdown Inspector (72% / 28% Layout) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '72% 28%', gap: '1.25rem', alignItems: 'start' }}>
-        {/* Calendar Visualization Layer */}
-        <div className="liquid-panel" style={{ padding: '1.5rem', background: 'var(--bg-secondary)', opacity: 0.94 }}>
-          {/* MONTH VIEW */}
-          {calendarView === 'month' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {/* Days of Week Headers */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', textAlign: 'center', fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-                <div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div>
+      {/* Main Spacious Calendar & Side Breakdown Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.75rem' }}>
+        {/* Calendar Main Container */}
+        <div className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.75rem', minHeight: '650px' }}>
+          <div className="view-header" style={{ paddingBottom: 0 }}>
+            <div>
+              <h1 className="view-header-title" style={{ fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <CalendarIcon size={24} style={{ color: 'var(--accent-secondary)' }} /> Schedule Workstation
+              </h1>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {/* View Switcher Toggle */}
+              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', padding: '2px' }}>
+                <button
+                  onClick={() => setViewMode('month')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: viewMode === 'month' ? 'var(--accent-primary)' : 'transparent',
+                    color: viewMode === 'month' ? '#FFF' : 'var(--text-secondary)',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Grid size={15} /> Month
+                </button>
+                <button
+                  onClick={() => setViewMode('week')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: viewMode === 'week' ? 'var(--accent-primary)' : 'transparent',
+                    color: viewMode === 'week' ? '#FFF' : 'var(--text-secondary)',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Columns size={15} /> Week Grid
+                </button>
               </div>
 
-              {/* Month Calendar Grid with Integrated Heatmap Cells */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button className="btn btn-secondary btn-icon" onClick={prevPeriod} style={{ width: '36px', height: '36px' }}>
+                  <ChevronLeft size={18} />
+                </button>
+                <strong style={{ fontSize: '1.1rem', minWidth: '150px', textAlign: 'center', color: 'var(--text-primary)' }}>
+                  {format(currentDate, viewMode === 'month' ? 'MMMM yyyy' : "'Week of' MMM d")}
+                </strong>
+                <button className="btn btn-secondary btn-icon" onClick={nextPeriod} style={{ width: '36px', height: '36px' }}>
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+
+              <button className="btn btn-primary" onClick={() => setPopoverDate(selectedDate)} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.9rem', fontSize: '0.85rem' }}>
+                <Plus size={16} /> New Event
+              </button>
+            </div>
+          </div>
+
+          {/* Render Mode */}
+          {viewMode === 'month' ? (
+            <>
+              {/* Days of Week Header */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', textAlign: 'center', fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+              </div>
+
+              {/* Month Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
-                {monthDays.map((day) => {
+                {days.map((day) => {
                   const dateStr = format(day, 'yyyy-MM-dd');
-                  const act = getDayActivity(day);
+
+                  const dayTasks = tasks.filter((t) => t.dueDate === dateStr || t.endDate === dateStr);
+                  const dayHabitLogs = habitLogs.filter((l) => l.date === dateStr && l.status === 'completed');
+                  const dayCompletedTasks = tasks.filter((t) => (t.dueDate === dateStr || t.endDate === dateStr || t.completedAt?.startsWith(dateStr)) && t.status === 'completed');
+
+                  const hPct = habits.length > 0 ? (dayHabitLogs.length / habits.length) * 100 : 0;
+                  const tPct = dayTasks.length > 0 ? (dayCompletedTasks.length / dayTasks.length) * 100 : dayCompletedTasks.length > 0 ? 80 : 0;
+                  const dayScore = Math.min(Math.round(habits.length > 0 ? hPct * 0.5 + tPct * 0.5 : tPct), 100);
+
                   const isSelected = isSameDay(day, selectedDate);
-                  const isCurrentMonthDay = isSameMonth(day, currentMonth);
-                  const isToday = isSameDay(day, new Date());
-                  const cellStyle = getHeatmapStyle(act.score, isSelected, isCurrentMonthDay);
+                  const isCurrentMonthDay = isSameMonth(day, currentDate);
+
+                  const getCellBackground = () => {
+                    if (!isCurrentMonthDay) return 'rgba(0,0,0,0.15)';
+                    if (isSelected) return 'linear-gradient(135deg, rgba(46, 94, 68, 0.85) 0%, rgba(22, 58, 41, 0.95) 100%)';
+                    if (dayScore === 0) return 'rgba(13, 34, 26, 0.7)';
+                    if (dayScore <= 30) return 'linear-gradient(135deg, rgba(85, 107, 96, 0.38) 0%, rgba(13, 34, 26, 0.8) 100%)';
+                    if (dayScore <= 60) return 'linear-gradient(135deg, rgba(230, 168, 23, 0.32) 0%, rgba(13, 34, 26, 0.8) 100%)';
+                    if (dayScore <= 80) return 'linear-gradient(135deg, rgba(232, 106, 51, 0.38) 0%, rgba(13, 34, 26, 0.8) 100%)';
+                    return 'linear-gradient(135deg, rgba(66, 152, 103, 0.45) 0%, rgba(13, 34, 26, 0.8) 100%)';
+                  };
 
                   return (
                     <div
                       key={dateStr}
                       onClick={() => setSelectedDate(day)}
                       style={{
-                        minHeight: '105px',
-                        padding: '0.65rem',
-                        borderRadius: 'var(--radius-sm)',
-                        background: cellStyle.background,
-                        border: cellStyle.border,
-                        boxShadow: cellStyle.boxShadow || 'none',
-                        opacity: cellStyle.opacity,
+                        minHeight: '110px',
+                        padding: '0.75rem',
+                        borderRadius: 'var(--radius-md)',
+                        background: getCellBackground(),
+                        border: isSelected ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
+                        opacity: isCurrentMonthDay ? 1 : 0.35,
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
-                        transition: 'all 150ms ease',
+                        gap: '0.4rem',
                       }}
                     >
-                      {/* Top Row: Day Number (left) & Completion % Badge (right) */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.95rem', fontWeight: isToday || isSelected ? 800 : 700, color: isToday ? 'var(--accent-secondary)' : isSelected ? '#ffffff' : 'var(--text-primary)' }}>
-                          {format(day, 'd')} {isToday && <span style={{ fontSize: '0.65rem', color: 'var(--accent-secondary)' }}>(Today)</span>}
+                        <span style={{ fontSize: '1rem', fontWeight: isSelected ? 800 : 700, color: 'var(--text-primary)' }}>
+                          {format(day, 'd')}
                         </span>
-                        {act.score > 0 && (
-                          <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '1px 5px', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.4)', color: 'var(--accent-secondary)', border: '1px solid var(--border-color)' }}>
-                            {act.score}%
+                        {dayScore > 0 && (
+                          <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '8px', background: '#429867', color: '#FFF', fontWeight: 800 }}>
+                            {dayScore}%
                           </span>
                         )}
                       </div>
 
-                      {/* Small Habit & Task Metadata */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.4rem' }}>
-                        {act.habitLogsCount > 0 && (
-                          <span style={{ fontSize: '0.725rem', color: 'var(--accent-secondary)', fontWeight: 600 }}>
-                            ● {act.habitLogsCount} habits
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        {dayHabitLogs.length > 0 && (
+                          <span style={{ fontSize: '0.7rem', color: '#57B978', fontWeight: 700 }}>
+                            ✓ {dayHabitLogs.length} habit(s)
                           </span>
                         )}
-                        {act.tasksCount > 0 && (
-                          <span style={{ fontSize: '0.725rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                            □ {act.completedTasksCount}/{act.tasksCount} tasks
+                        {dayTasks.length > 0 && (
+                          <span style={{ fontSize: '0.7rem', background: 'rgba(7, 26, 19, 0.85)', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {dayTasks.length} task(s)
                           </span>
                         )}
                       </div>
@@ -343,214 +326,79 @@ export const CalendarView: React.FC = () => {
                   );
                 })}
               </div>
-            </div>
-          )}
-
-          {/* WEEK VIEW */}
-          {calendarView === 'week' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
-                {weekDays.map((day) => {
-                  const dateStr = format(day, 'yyyy-MM-dd');
-                  const act = getDayActivity(day);
-                  const isSelected = isSameDay(day, selectedDate);
-                  const isToday = isSameDay(day, new Date());
-
-                  return (
-                    <div
-                      key={dateStr}
-                      onClick={() => setSelectedDate(day)}
-                      style={{
-                        padding: '1rem',
-                        borderRadius: 'var(--radius-md)',
-                        background: isSelected ? 'rgba(49, 86, 61, 0.95)' : 'rgba(13, 34, 26, 0.7)',
-                        border: isSelected ? '2px solid var(--accent-secondary)' : '1px solid var(--border-color)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.75rem',
-                      }}
-                    >
-                      <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>{format(day, 'EEE')}</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isToday ? 'var(--accent-secondary)' : 'var(--text-primary)' }}>{format(day, 'd')}</div>
-                      </div>
-
-                      <div style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <div>Habits: <strong style={{ color: 'var(--accent-secondary)' }}>{act.habitLogsCount}</strong></div>
-                        <div>Tasks: <strong style={{ color: 'var(--text-primary)' }}>{act.completedTasksCount}/{act.tasksCount}</strong></div>
-                        {act.score > 0 && <div>Score: <strong style={{ color: 'var(--accent-secondary)' }}>{act.score}%</strong></div>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* DAY VIEW */}
-          {calendarView === 'day' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <h3 style={{ margin: 0, fontWeight: 800 }}>Detailed Day Schedule — {format(selectedDate, 'EEEE, MMMM d, yyyy')}</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {Array.from({ length: 12 }, (_, i) => i + 8).map((hour) => {
-                  const hourStr = `${hour < 10 ? '0' : ''}${hour}:00`;
-                  const hourHabits = habits.filter((h) => h.startTime?.startsWith(hourStr.slice(0, 2)));
-                  return (
-                    <div key={hour} style={{ display: 'flex', gap: '1rem', padding: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
-                      <div style={{ width: '70px', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{hourStr}</div>
-                      <div style={{ flex: 1 }}>
-                        {hourHabits.length > 0 ? (
-                          hourHabits.map((hh) => (
-                            <span key={hh.id} style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)', fontWeight: 600 }}>
-                              • {hh.name}
-                            </span>
-                          ))
-                        ) : (
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Free slot</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* AGENDA VIEW */}
-          {calendarView === 'agenda' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <h3 style={{ margin: 0, fontWeight: 800 }}>Agenda List Overview</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {tasks.slice(0, 10).map((t) => (
-                  <div key={t.id} style={{ padding: '0.85rem', background: 'rgba(0,0,0,0.3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{t.title}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Due: {t.dueDate || 'Unscheduled'}</div>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: 'rgba(82, 118, 83, 0.2)', color: 'var(--accent-secondary)', borderRadius: 'var(--radius-sm)' }}>
-                      {t.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            </>
+          ) : (
+            <div style={{ flex: 1, minHeight: '550px' }}>
+              <WeekGrid
+                items={calendarItems}
+                currentDate={currentDate}
+                weekStartDay={1}
+                onCreateDraft={(d) => setPopoverDate(d)}
+                onSelectItem={(item) => console.log('Selected calendar item:', item)}
+                onUpdateItem={(item) => db.calendarItems.put(item)}
+              />
             </div>
           )}
         </div>
 
-        {/* Date Breakdown Inspector (28% Right Column) */}
-        <aside className="liquid-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg-secondary)', opacity: 0.94 }}>
+        {/* Selected Date Side Breakdown */}
+        <aside className="liquid-panel flip-card-item" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem' }}>
           <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-            <h3 style={{ fontSize: '1.15rem', margin: 0, fontWeight: 800, color: 'var(--text-primary)' }}>Date Breakdown Inspector</h3>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>{format(selectedDate, 'EEEE, MMM d, yyyy')}</span>
+            <h3 style={{ fontSize: '1.15rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Date Breakdown</h3>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
           </div>
 
-          {/* Quick Stats Cards for Selected Date */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div style={{ background: 'rgba(13, 34, 26, 0.7)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>HABITS LOGGED</span>
-              <strong style={{ display: 'block', fontSize: '1.2rem', color: 'var(--accent-secondary)', marginTop: '0.2rem' }}>
+            <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>HABITS LOGGED</span>
+              <strong style={{ display: 'block', fontSize: '1.25rem', color: 'var(--accent-secondary)', marginTop: '0.2rem' }}>
                 {completedHabitCount} / {totalActiveHabits}
               </strong>
             </div>
 
-            <div style={{ background: 'rgba(13, 34, 26, 0.7)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>TASKS DONE</span>
-              <strong style={{ display: 'block', fontSize: '1.2rem', color: 'var(--text-primary)', marginTop: '0.2rem' }}>
+            <div style={{ background: 'rgba(13, 34, 26, 0.65)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>TASKS COMPLETED</span>
+              <strong style={{ display: 'block', fontSize: '1.25rem', color: 'var(--text-primary)', marginTop: '0.2rem' }}>
                 {completedTaskCount} / {selectedTasks.length}
               </strong>
             </div>
           </div>
 
-          {/* Habits Section with Interactive Complete Toggle */}
           <div>
-            <h4 style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem', fontWeight: 700 }}>
-              Habits Scheduled Today
-            </h4>
-            {habits.length === 0 ? (
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No active habits defined.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                {habits.map((h) => {
-                  const isLogged = selectedHabitLogs.some((l) => l.habitId === h.id && l.status === 'completed');
-                  return (
-                    <div
-                      key={h.id}
-                      style={{
-                        padding: '0.55rem 0.75rem',
-                        background: 'rgba(0,0,0,0.3)',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-color)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      <span style={{ color: 'var(--text-primary)', textDecoration: isLogged ? 'line-through' : 'none' }}>{h.name}</span>
-                      <button
-                        className={`btn ${isLogged ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ padding: '2px 8px', fontSize: '0.75rem' }}
-                        onClick={() => handleHabitToggle(h.id)}
-                      >
-                        {isLogged ? '✓ Done' : 'Check'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Scheduled Tasks for Date */}
-          <div>
-            <h4 style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem', fontWeight: 700 }}>
-              Scheduled Tasks ({selectedTasks.length})
+            <h4 style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+              <CheckSquare size={15} style={{ color: 'var(--warning)' }} /> Scheduled Tasks ({selectedTasks.length})
             </h4>
             {selectedTasks.length === 0 ? (
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No tasks assigned for this date.</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No tasks scheduled for this date.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 {selectedTasks.map((t) => (
-                  <div
-                    key={t.id}
-                    style={{
-                      padding: '0.55rem 0.75rem',
-                      background: 'rgba(0,0,0,0.3)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--border-color)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    <span style={{ color: 'var(--text-primary)', textDecoration: t.status === 'completed' ? 'line-through' : 'none' }}>{t.title}</span>
-                    <button
-                      className={`btn ${t.status === 'completed' ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ padding: '2px 8px', fontSize: '0.75rem' }}
-                      onClick={() => handleTaskToggle(t)}
-                    >
-                      {t.status === 'completed' ? '✓ Done' : 'Complete'}
-                    </button>
+                  <div key={t.id} style={{ padding: '0.6rem 0.75rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
+                    <strong style={{ color: 'var(--text-primary)', textDecoration: t.status === 'completed' ? 'line-through' : 'none' }}>{t.title}</strong>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Daily Review Integration */}
           <div>
-            <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem', fontWeight: 700 }}>
-              Daily Review Reflection
+            <h4 style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+              <Activity size={15} style={{ color: 'var(--accent-secondary)' }} /> Habit Logs ({selectedHabitLogs.length})
             </h4>
-            {dailyReview ? (
-              <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.825rem' }}>
-                <div>Productivity Score: <strong style={{ color: 'var(--accent-secondary)' }}>{dailyReview.rating || 5} / 5</strong></div>
-                {dailyReview.accomplished && <p style={{ margin: '0.4rem 0 0 0', color: 'var(--text-secondary)' }}>{dailyReview.accomplished}</p>}
-              </div>
+            {selectedHabitLogs.length === 0 ? (
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No habit check-ins recorded for this date.</p>
             ) : (
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No daily review entry logged for this date.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {selectedHabitLogs.map((l) => {
+                  const habit = habits.find((h) => h.id === l.habitId);
+                  return (
+                    <div key={l.id} style={{ padding: '0.5rem 0.75rem', background: 'rgba(13, 34, 26, 0.65)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-primary)' }}>{habit?.name || 'Habit Routine'}</span>
+                      <strong style={{ textTransform: 'capitalize', color: 'var(--accent-secondary)' }}>{l.status}</strong>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </aside>

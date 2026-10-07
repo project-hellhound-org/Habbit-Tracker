@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, Habit } from '../db/schema';
+import { db, Habit, SubHabit, SubHabitLog } from '../db/schema';
 import { calculateHabitStats } from '../engine/streakEngine';
 import { AddHabitModal } from '../components/AddHabitModal';
-import { Plus, CheckCircle, XCircle, SkipForward, Trash2, Edit3, Flame, Clock, Calendar, BarChart2 } from 'lucide-react';
+import { Plus, CheckCircle, XCircle, SkipForward, Trash2, Edit3, Flame, Clock, Calendar, BarChart2, ChevronDown, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const HabitsView: React.FC = () => {
   const habits = useLiveQuery(() => db.habits.where('archived').equals(0).toArray()) || [];
   const habitLogs = useLiveQuery(() => db.habitLogs.toArray()) || [];
+  const subHabits = useLiveQuery(() => db.subHabits.filter(sh => !sh.archived).toArray()) || [];
+  const subHabitLogs = useLiveQuery(() => db.subHabitLogs.toArray()) || [];
   const settings = useLiveQuery(() => db.settings.get('default'));
 
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState(false);
   const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
+  const [expandedHabits, setExpandedHabits] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (id: string) => {
+    setExpandedHabits(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const todayLogs = habitLogs.filter((l) => l.date === todayStr && l.status === 'completed');
@@ -45,6 +52,23 @@ export const HabitsView: React.FC = () => {
     if (confirm('Delete this habit specification?')) {
       await db.habits.delete(id);
       await db.habitLogs.where('habitId').equals(id).delete();
+    }
+  };
+
+  const handleLogSubHabit = async (subHabit: SubHabit, status: 'completed' | 'partial' | 'skipped') => {
+    const existing = await db.subHabitLogs.where('[subHabitId+date]').equals([subHabit.id, todayStr]).first();
+    if (existing) {
+      await db.subHabitLogs.update(existing.id, { status, loggedAt: new Date().toISOString(), value: status === 'completed' ? 1 : 0 });
+    } else {
+      await db.subHabitLogs.add({
+        id: `shlog-${Date.now()}`,
+        subHabitId: subHabit.id,
+        habitId: subHabit.habitId,
+        date: todayStr,
+        status,
+        value: status === 'completed' ? 1 : 0,
+        loggedAt: new Date().toISOString(),
+      });
     }
   };
 
@@ -121,6 +145,12 @@ export const HabitsView: React.FC = () => {
           habits.map((h) => {
             const stats = calculateHabitStats(h, habitLogs, new Date(), settings?.streakSkipRule || 'pause');
             const todayLog = habitLogs.find((l) => l.habitId === h.id && l.date === todayStr);
+            const habitSubHabits = subHabits.filter(sh => sh.habitId === h.id).sort((a, b) => a.order - b.order);
+            const hasSubHabits = habitSubHabits.length > 0;
+            const completedSubHabits = habitSubHabits.filter(sh => {
+              const log = subHabitLogs.find(l => l.subHabitId === sh.id && l.date === todayStr);
+              return log?.status === 'completed';
+            }).length;
 
             return (
               <div
@@ -136,6 +166,15 @@ export const HabitsView: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                      {hasSubHabits && (
+                        <button 
+                          className="btn btn-secondary btn-icon" 
+                          style={{ padding: '0.2rem', background: 'transparent', border: 'none' }}
+                          onClick={() => toggleExpand(h.id)}
+                        >
+                          {expandedHabits[h.id] ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                        </button>
+                      )}
                       <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{h.name}</h3>
                       <span
                         style={{
@@ -153,6 +192,11 @@ export const HabitsView: React.FC = () => {
                       {h.startTime && (
                         <span style={{ fontSize: '0.775rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                           <Clock size={13} /> {h.startTime} {h.amPm || ''} {h.endTime ? `- ${h.endTime}` : ''}
+                        </span>
+                      )}
+                      {hasSubHabits && (
+                        <span style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                          {completedSubHabits} / {habitSubHabits.length} sub-habits done
                         </span>
                       )}
                     </div>
@@ -193,102 +237,6 @@ export const HabitsView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Sub-habits / Sub-topics section */}
-                {h.subHabits && h.subHabits.length > 0 && (
-                  <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', marginTop: '0.2rem' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                      Sub-Topics & Specific Activities:
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.6rem' }}>
-                      {h.subHabits.map((sub) => {
-                        const subState = todayLog?.subHabitsState?.[sub.id] || (sub.completed ? 'completed' : 'pending');
-                        return (
-                          <div
-                            key={sub.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '0.45rem 0.75rem',
-                              background: 'var(--bg-secondary)',
-                              borderRadius: 'var(--radius-sm)',
-                              border: subState === 'completed' ? '1px solid var(--accent-primary)' : subState === 'failed' ? '1px solid #ef4444' : '1px solid var(--border-color)',
-                            }}
-                          >
-                            <span style={{ fontSize: '0.85rem', color: subState === 'completed' ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: subState === 'completed' ? 'line-through' : 'none' }}>
-                              {sub.title}
-                            </span>
-                            <div style={{ display: 'flex', gap: '0.3rem' }}>
-                              <button
-                                type="button"
-                                className="btn btn-icon"
-                                title="Mark Completed"
-                                style={{
-                                  padding: '3px 6px',
-                                  background: subState === 'completed' ? 'var(--accent-primary)' : 'transparent',
-                                  color: subState === 'completed' ? '#fff' : 'var(--text-muted)',
-                                  borderRadius: 'var(--radius-sm)',
-                                  border: '1px solid var(--border-color)'
-                                }}
-                                onClick={async () => {
-                                  const newState: 'completed' | 'failed' | 'pending' = subState === 'completed' ? 'pending' : 'completed';
-                                  const updatedState: Record<string, 'completed' | 'failed' | 'pending'> = { ...(todayLog?.subHabitsState || {}), [sub.id]: newState };
-                                  if (todayLog) {
-                                    await db.habitLogs.update(todayLog.id, { subHabitsState: updatedState });
-                                  } else {
-                                    await db.habitLogs.add({
-                                      id: `log-${Date.now()}`,
-                                      habitId: h.id,
-                                      date: todayStr,
-                                      status: 'partial',
-                                      value: 0.5,
-                                      subHabitsState: updatedState,
-                                      loggedAt: new Date().toISOString(),
-                                    });
-                                  }
-                                }}
-                              >
-                                ✓
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-icon"
-                                title="Mark Missed/Failed"
-                                style={{
-                                  padding: '3px 6px',
-                                  background: subState === 'failed' ? '#ef4444' : 'transparent',
-                                  color: subState === 'failed' ? '#fff' : 'var(--text-muted)',
-                                  borderRadius: 'var(--radius-sm)',
-                                  border: '1px solid var(--border-color)'
-                                }}
-                                onClick={async () => {
-                                  const newState: 'completed' | 'failed' | 'pending' = subState === 'failed' ? 'pending' : 'failed';
-                                  const updatedState: Record<string, 'completed' | 'failed' | 'pending'> = { ...(todayLog?.subHabitsState || {}), [sub.id]: newState };
-                                  if (todayLog) {
-                                    await db.habitLogs.update(todayLog.id, { subHabitsState: updatedState });
-                                  } else {
-                                    await db.habitLogs.add({
-                                      id: `log-${Date.now()}`,
-                                      habitId: h.id,
-                                      date: todayStr,
-                                      status: 'partial',
-                                      value: 0,
-                                      subHabitsState: updatedState,
-                                      loggedAt: new Date().toISOString(),
-                                    });
-                                  }
-                                }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 {/* Progress bar */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -299,6 +247,59 @@ export const HabitsView: React.FC = () => {
                     <div className="progress-bar-fill" style={{ width: `${stats.completionRate30Days}%` }} />
                   </div>
                 </div>
+
+                {/* Sub-habits section */}
+                {hasSubHabits && expandedHabits[h.id] && (
+                  <div style={{ 
+                    marginTop: '0.5rem', 
+                    background: 'rgba(13, 34, 26, 0.65)', 
+                    borderRadius: 'var(--radius-md)', 
+                    padding: '1rem',
+                    border: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem'
+                  }}>
+                    <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                      Sub-Habits
+                    </h4>
+                    {habitSubHabits.map(sh => {
+                      const shLog = subHabitLogs.find(l => l.subHabitId === sh.id && l.date === todayStr);
+                      return (
+                        <div key={sh.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>{sh.name}</span>
+                            {sh.description && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sh.description}</span>}
+                          </div>
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {sh.targetValue && (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: '0.5rem' }}>
+                                Target: {sh.targetValue} {sh.unit}
+                              </span>
+                            )}
+                            <button
+                              className={`btn ${shLog?.status === 'completed' ? 'btn-primary' : 'btn-secondary'} btn-icon`}
+                              style={{ padding: '0.4rem' }}
+                              onClick={() => handleLogSubHabit(sh, 'completed')}
+                              title="Mark Done"
+                            >
+                              <CheckCircle size={14} />
+                            </button>
+                            <button
+                              className={`btn ${shLog?.status === 'skipped' ? 'btn-primary' : 'btn-secondary'} btn-icon`}
+                              style={{ padding: '0.4rem' }}
+                              onClick={() => handleLogSubHabit(sh, 'skipped')}
+                              title="Skip"
+                            >
+                              <SkipForward size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })

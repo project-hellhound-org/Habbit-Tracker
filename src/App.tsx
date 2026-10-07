@@ -14,21 +14,19 @@ import { AnalyticsView } from './views/AnalyticsView';
 import { CalendarView } from './views/CalendarView';
 import { InsightsView } from './views/InsightsView';
 import { SettingsView } from './views/SettingsView';
+import { WorkspaceView } from './features/workspace/WorkspaceView';
+import { FinanceView } from './features/finance/components/FinanceView';
 import { Leaf } from 'lucide-react';
-import { WishlistView } from './views/WishlistView';
-import { NotesView } from './views/NotesView';
-import { FinanceView } from './views/FinanceView';
 
 export type ActiveTab =
   | 'dashboard'
   | 'habits'
   | 'tasks'
+  | 'calendar'
+  | 'workspace'
+  | 'finance'
   | 'journal'
   | 'analytics'
-  | 'calendar'
-  | 'finance'
-  | 'wishlist'
-  | 'notes'
   | 'insights'
   | 'settings';
 
@@ -125,12 +123,11 @@ export const App: React.FC = () => {
           {activeTab === 'dashboard' && <DashboardView setActiveTab={setActiveTab} />}
           {activeTab === 'habits' && <HabitsView />}
           {activeTab === 'tasks' && <TasksView />}
+          {activeTab === 'calendar' && <CalendarView />}
+          {activeTab === 'workspace' && <WorkspaceView />}
+          {activeTab === 'finance' && <FinanceView />}
           {activeTab === 'journal' && <JournalView />}
           {activeTab === 'analytics' && <AnalyticsView />}
-          {activeTab === 'calendar' && <CalendarView />}
-          {activeTab === 'finance' && <FinanceView />}
-          {activeTab === 'wishlist' && <WishlistView />}
-          {activeTab === 'notes' && <NotesView />}
           {activeTab === 'insights' && <InsightsView />}
           {activeTab === 'settings' && <SettingsView />}
         </main>

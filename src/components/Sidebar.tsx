@@ -12,10 +12,9 @@ import {
   Calendar,
   Sparkles,
   Settings,
-  DollarSign,
-  ShoppingBag,
-  FileText,
-  Leaf
+  Leaf,
+  Layers,
+  Wallet,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -39,9 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'habits', label: 'Habits', icon: CalendarDays },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'finance', label: 'Finance', icon: DollarSign },
-    { id: 'wishlist', label: 'Wishlist', icon: ShoppingBag },
-    { id: 'notes', label: 'Notes & Tags', icon: FileText },
+    { id: 'workspace', label: 'Workspace', icon: Layers },
+    { id: 'finance', label: 'Finance & Wealth', icon: Wallet },
     { id: 'journal', label: 'Daily Review', icon: BookOpen },
     { id: 'analytics', label: 'Analytics', icon: BarChart2 },
     { id: 'insights', label: 'Smart Insights', icon: Sparkles },

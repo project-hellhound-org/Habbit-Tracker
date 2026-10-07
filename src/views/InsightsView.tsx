@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, AIMessage } from '../db/schema';
 import { queryAIAssistant } from '../services/aiProviderService';
+import { marked } from 'marked';
 import {
   Sparkles,
   Send,
@@ -20,6 +21,20 @@ import {
   Flame,
   CheckCircle2
 } from 'lucide-react';
+
+// Configure marked for safe rendering
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+
+const renderMarkdown = (text: string): string => {
+  try {
+    return marked.parse(text) as string;
+  } catch {
+    return text;
+  }
+};
 
 export const InsightsView: React.FC = () => {
   const [activeConvId, setActiveConvId] = useState<string>('default-conv');
@@ -419,9 +434,17 @@ export const InsightsView: React.FC = () => {
                   <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--border-color)' }}>
                     {msg.sender === 'user' ? <User size={20} style={{ color: 'var(--bg-primary)' }} /> : <Bot size={20} style={{ color: 'var(--accent-secondary)' }} />}
                   </div>
-                  <div style={{ padding: '1.15rem 1.4rem', borderRadius: 'var(--radius-md)', background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-secondary)', color: msg.sender === 'user' ? '#FFFFFF' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', boxShadow: '0 4px 18px rgba(0,0,0,0.22)' }}>
-                    {msg.text}
-                  </div>
+                  {msg.sender === 'user' ? (
+                    <div style={{ padding: '1.15rem 1.4rem', borderRadius: 'var(--radius-md)', background: 'var(--accent-primary)', color: '#FFFFFF', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', boxShadow: '0 4px 18px rgba(0,0,0,0.22)' }}>
+                      {msg.text}
+                    </div>
+                  ) : (
+                    <div
+                      className="ai-markdown-content"
+                      style={{ padding: '1.15rem 1.4rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.95rem', lineHeight: 1.6, boxShadow: '0 4px 18px rgba(0,0,0,0.22)' }}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }}
+                    />
+                  )}
                 </div>
               ))
             )}

@@ -1,12 +1,5 @@
 import Dexie, { Table } from 'dexie';
 
-export interface SubHabit {
-  id: string;
-  title: string;
-  completed: boolean;
-  status?: 'completed' | 'failed' | 'pending';
-}
-
 export interface Habit {
   id: string;
   name: string;
@@ -30,7 +23,6 @@ export interface Habit {
   difficulty?: string;
   priority?: string;
   notes?: string;
-  subHabits?: SubHabit[];
   startDate?: string;
   endDate?: string;   // Defined completion timeline (deprecated/optional)
   archived: number | boolean;
@@ -45,7 +37,32 @@ export interface HabitLog {
   status: 'completed' | 'partial' | 'skipped' | 'failed';
   value: number;
   notes?: string;
-  subHabitsState?: Record<string, 'completed' | 'failed' | 'pending'>;
+  loggedAt: string;
+}
+
+// ─── Sub-Habits ───────────────────────────────────────────────
+export interface SubHabit {
+  id: string;
+  habitId: string;           // FK → Habit.id
+  name: string;              // e.g. "Linear Algebra", "React Hooks"
+  description?: string;
+  order: number;             // display order within parent
+  targetValue?: number;      // progress target (e.g. 100 pages)
+  unit?: string;             // e.g. "pages", "problems", "minutes"
+  color?: string;
+  archived: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SubHabitLog {
+  id: string;
+  subHabitId: string;
+  habitId: string;           // denormalized for efficient queries
+  date: string;
+  status: 'completed' | 'partial' | 'skipped';
+  value: number;
+  notes?: string;
   loggedAt: string;
 }
 
@@ -57,7 +74,7 @@ export interface Task {
   priority: 'low' | 'medium' | 'high' | 'critical';
   frequency?: 'once_a_week' | 'daily' | 'custom';
   customDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
-  startDate?: string;
+  startDate?: string;    // deprecated — kept for backward compat, no longer indexed
   startTime?: string;
   endDate?: string;
   endTime?: string;
@@ -118,80 +135,6 @@ export interface Goal {
   relatedProjectIds?: string[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface WishlistItem {
-  id: string;
-  title: string;
-  description?: string;
-  category: 'purchase' | 'resource' | 'project' | string;
-  estimatedCost?: number;
-  url?: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'saved' | 'in_progress' | 'acquired' | 'archived';
-  tags?: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface NoteItem {
-  id: string;
-  title: string;
-  content: string;
-  category?: string;
-  tags?: string[];
-  color?: string;
-  relatedType?: 'habit' | 'task' | 'project' | 'goal' | 'finance' | 'general';
-  relatedId?: string;
-  pinned?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface FinanceAccount {
-  id: string;
-  name: string;
-  type: 'cash' | 'bank' | 'upi' | 'credit_card' | 'savings' | 'investment';
-  balance: number;
-  currency: string;
-  color?: string;
-  isDefault?: boolean;
-  createdAt: string;
-}
-
-export interface FinanceTransaction {
-  id: string;
-  type: 'income' | 'expense' | 'transfer' | 'refund' | 'adjustment';
-  amount: number;
-  accountId: string;
-  toAccountId?: string;
-  category: string;
-  date: string;
-  time?: string;
-  merchant?: string;
-  paymentMethod?: string;
-  description?: string;
-  notes?: string;
-  tags?: string[];
-  createdAt: string;
-}
-
-export interface FinanceBudget {
-  id: string;
-  category: string;
-  amountLimit: number;
-  period: 'monthly' | 'weekly' | 'yearly';
-  startDate?: string;
-}
-
-export interface FinanceSavingsGoal {
-  id: string;
-  title: string;
-  targetAmount: number;
-  currentAmount: number;
-  targetDate?: string;
-  category?: string;
-  notes?: string;
 }
 
 export interface JournalEntry {
@@ -261,6 +204,151 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
+}
+
+// ─── Workspace Management ─────────────────────────────────────
+export interface Note {
+  id: string;
+  entityType: 'habit' | 'task' | 'project' | 'goal' | 'general';
+  entityId?: string;
+  title: string;
+  content: string;        // markdown
+  tags: string[];
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WishlistItem {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'wished' | 'in_progress' | 'acquired' | 'dismissed';
+  linkedEntityType?: string;
+  linkedEntityId?: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  parentType: 'wishlist' | 'note' | 'task' | 'habit' | 'standalone';
+  parentId?: string;
+  title: string;
+  completed: boolean;
+  order: number;
+  createdAt: string;
+}
+
+// ─── Calendar Items ───────────────────────────────────────────
+export interface CalendarItem {
+  id: string;
+  type: 'event' | 'task' | 'appointment';
+  title: string;
+  start: string;            // ISO-8601 UTC
+  end: string;              // ISO-8601 UTC
+  allDay: boolean;
+  rrule?: string;           // RFC 5545
+  categoryId?: string;
+  description?: string;
+  deadline?: string;        // tasks only
+  reminderMinutes?: number;
+  completed?: boolean;      // tasks only
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Finance Entities ─────────────────────────────────────────
+export type FinAccountKind = 'bank' | 'savings' | 'wallet' | 'credit_card' | 'cash';
+export type FinTxType = 'expense' | 'income' | 'transfer';
+export type FinCurrencyCode = 'INR' | 'USD' | 'EUR' | 'GBP';
+
+export interface FinAccount {
+  id: string;
+  name: string;
+  kind: FinAccountKind;
+  currency: FinCurrencyCode;
+  openingBalanceMinor: number;  // paise/cents
+  iconKey: string;
+  isLiability: boolean;
+  archived: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinCategory {
+  id: string;
+  name: string;
+  type: 'expense' | 'income';
+  colorToken: string;
+  iconKey: string;
+  parentId?: string;
+  archived: boolean;
+}
+
+export interface FinTransaction {
+  id: string;
+  type: FinTxType;
+  amountMinor: number;         // integer paise/cents
+  currency: FinCurrencyCode;
+  accountId: string;
+  toAccountId?: string;        // for transfers
+  transferGroupId?: string;    // links two sides of a transfer
+  categoryId?: string;
+  merchant?: string;
+  description?: string;
+  notes?: string;
+  tags: string[];
+  occurredAt: string;          // ISO-8601 UTC
+  recurringRuleId?: string;
+  habitId?: string;            // optional habit-linking
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;          // soft delete
+}
+
+export interface FinBudget {
+  id: string;
+  categoryId: string;
+  periodKind: 'month' | 'week' | 'year';
+  limitMinor: number;
+  currency: FinCurrencyCode;
+  rollover: boolean;
+  alertAtPercent: number[];
+}
+
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  iconKey: string;
+  targetMinor: number;
+  currentMinor: number;
+  currency: FinCurrencyCode;
+  targetDate?: string;
+  linkedAccountId?: string;
+  contributions: { id: string; amountMinor: number; at: string }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecurringRule {
+  id: string;
+  description: string;
+  amountMinor: number;
+  currency: FinCurrencyCode;
+  accountId: string;
+  categoryId: string;
+  rrule: string;               // RFC 5545
+  startDate: string;
+  endDate?: string;
+  status: 'active' | 'paused';
+  iconKey: string;
+  autoPost: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type ForestTheme = 'rain_forest' | 'foggy_mist';
@@ -343,6 +431,8 @@ export interface AISettings {
 export class HabitOSDatabase extends Dexie {
   habits!: Table<Habit>;
   habitLogs!: Table<HabitLog>;
+  subHabits!: Table<SubHabit>;
+  subHabitLogs!: Table<SubHabitLog>;
   tasks!: Table<Task>;
   subtasks!: Table<Subtask>;
   projects!: Table<Project>;
@@ -351,20 +441,27 @@ export class HabitOSDatabase extends Dexie {
   dailyReviews!: Table<DailyReview>;
   categories!: Table<Category>;
   tags!: Table<Tag>;
+  notes!: Table<Note>;
+  wishlistItems!: Table<WishlistItem>;
+  checklistItems!: Table<ChecklistItem>;
+  calendarItems!: Table<CalendarItem>;
   settings!: Table<AppSettings>;
   aiConversations!: Table<AIConversation>;
   aiMessages!: Table<AIMessage>;
   aiSettings!: Table<AISettings>;
-  wishlistItems!: Table<WishlistItem>;
-  notes!: Table<NoteItem>;
-  financeAccounts!: Table<FinanceAccount>;
-  financeTransactions!: Table<FinanceTransaction>;
-  financeBudgets!: Table<FinanceBudget>;
-  financeSavingsGoals!: Table<FinanceSavingsGoal>;
+  // Finance
+  finAccounts!: Table<FinAccount>;
+  finCategories!: Table<FinCategory>;
+  finTransactions!: Table<FinTransaction>;
+  finBudgets!: Table<FinBudget>;
+  savingsGoals!: Table<SavingsGoal>;
+  recurringRules!: Table<RecurringRule>;
 
   constructor() {
     super('HabitOSDB');
-    this.version(4).stores({
+
+    // v3 — original schema (kept for migration path)
+    this.version(3).stores({
       habits: 'id, name, category, archived',
       habitLogs: 'id, habitId, date, status, [habitId+date]',
       tasks: 'id, title, status, priority, dueDate, startDate, endDate, projectId, goalId',
@@ -379,12 +476,39 @@ export class HabitOSDatabase extends Dexie {
       aiConversations: 'id, entityType, entityId, updatedAt',
       aiMessages: 'id, conversationId, timestamp',
       aiSettings: 'id',
-      wishlistItems: 'id, title, category, status, priority',
-      notes: 'id, title, category, relatedType, relatedId, pinned',
-      financeAccounts: 'id, name, type',
-      financeTransactions: 'id, type, accountId, category, date',
-      financeBudgets: 'id, category, period',
-      financeSavingsGoals: 'id, title, category'
+    });
+
+    // v4 — sub-habits, workspace, calendar, finance
+    this.version(4).stores({
+      habits: 'id, name, category, archived',
+      habitLogs: 'id, habitId, date, status, [habitId+date]',
+      subHabits: 'id, habitId, archived',
+      subHabitLogs: 'id, subHabitId, habitId, date, [subHabitId+date]',
+      tasks: 'id, title, status, priority, dueDate, endDate, projectId, goalId',  // startDate removed from index
+      subtasks: 'id, taskId, completed',
+      projects: 'id, name, category, status, goalId',
+      goals: 'id, title, category, status',
+      journalEntries: 'id, date, mood, energy',
+      dailyReviews: 'id, date',
+      categories: 'id, name',
+      tags: 'id, name',
+      // Workspace
+      notes: 'id, entityType, entityId, pinned, updatedAt',
+      wishlistItems: 'id, status, priority, updatedAt',
+      checklistItems: 'id, parentType, parentId, completed',
+      // Calendar
+      calendarItems: 'id, type, start, end, categoryId',
+      settings: 'id',
+      aiConversations: 'id, entityType, entityId, updatedAt',
+      aiMessages: 'id, conversationId, timestamp',
+      aiSettings: 'id',
+      // Finance
+      finAccounts: 'id, kind, archived',
+      finCategories: 'id, name, type, archived',
+      finTransactions: 'id, type, accountId, categoryId, occurredAt, deletedAt',
+      finBudgets: 'id, categoryId, periodKind',
+      savingsGoals: 'id, name',
+      recurringRules: 'id, status, accountId, categoryId',
     });
   }
 }
